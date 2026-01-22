@@ -1,0 +1,5 @@
+pymongo
+pdfplumber
+requests
+python-dotenv
+google-generativeai
