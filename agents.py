@@ -13,7 +13,7 @@ else:
 class AgentSummarizer:
     def __init__(self):
         # Switch to Gemini 1.5 Pro (Smarter model) for reasoning tasks
-        self.model = genai.GenerativeModel("gemini-1.5-pro")
+        self.model = genai.GenerativeModel("gemini-2.5-flash")
 
     def run(self, combined_text):
         system_prompt = """Role: Political Science Professor (Specialist in Thai Constitutions).

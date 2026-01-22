@@ -31,7 +31,7 @@ def process_pdf_with_gemini(pdf_path):
         logging.info("✅ File processed! Asking Gemini to extract data...")
 
         # Model Selection
-        model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+        model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 
         # Prompt
         prompt = """

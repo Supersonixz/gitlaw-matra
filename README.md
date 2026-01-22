@@ -1,12 +1,12 @@
 # Thai Constitution Semantic Engine Pipeline
 
-This project processes Thai Constitution PDF files into a structured MongoDB database using Python and GLM-4.7 Agents.
+This project processes Thai Constitution PDF files into a structured MongoDB database using Python and Google Agents.
 
 ## Prerequisites
 
 - Python 3.8+
 - MongoDB (Running locally or hosted)
-- ZhipuAI (GLM-4.7) API Key
+- Google API Key
 
 ## Setup
 
@@ -24,7 +24,7 @@ This project processes Thai Constitution PDF files into a structured MongoDB dat
 3.  **Environment Variables:**
     Create a `.env` file in the root directory:
     ```env
-    ZAI_API_KEY=your_zhipuai_api_key
+    GOOGLE_API_KEY=your_google_api_key
     MONGO_URI=mongodb://localhost:27017/
     ```
 

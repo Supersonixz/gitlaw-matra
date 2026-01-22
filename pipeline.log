@@ -1,0 +1,3 @@
+2026-01-22 20:19:20,323 - WARNING - GOOGLE_API_KEY is not set.
+2026-01-22 20:19:20,329 - ERROR - CRITICAL: GOOGLE_API_KEY not found in environment variables. Please set it in .env file.
+2026-01-22 20:23:28,234 - INFO - Auto-detected PDF: 2475-1.pdf
