@@ -1,14 +1,11 @@
 // src/utils/dataLoader.ts
-
-import overviewRaw from '@/data/constitution-overview.json';
-import contentRaw from '@/data/constitutions.json';
-
-// 🔥 IMPORT ไฟล์ใหม่ 2 ไฟล์ (ตรวจสอบ path ให้ตรงกับที่คุณวางไฟล์)
-import rich2475Perm from '@/data/con2475_full_summary.json';
-// สมมติว่าคุณเจนไฟล์ temp แล้ว (ถ้ายัง ให้ใช้ไฟล์ Perm แก้ขัดไปก่อนได้)
-import rich2475Temp from '@/data/con2475temp_full_summary.json';
+// 🔥 IMPORT ไฟล์ใหม่
+import rich2475Perm from '@/backend/json_output/final/con2475_full_summary.json';
+import rich2475Temp from '@/backend/json_output/final/con2475temp_full_summary.json';
+import rich2489Perm from '@/backend/json_output/final/con2489_full_summary.json';
 
 import { CATEGORY_COLORS } from '@/utils/categoryColors';
+import { PDF_PAGE_MAPPING, PDF_TOTAL_PAGES } from '@/mapping/pdfPageMapping';
 
 // --- Type Definitions ---
 export interface CategoryOverview {
@@ -22,16 +19,17 @@ export interface ConstitutionMeta {
     id: string;
     name: string;
     year: number;
-    pages: any[][];
+    pages: any[][]; // เก็บไว้เพื่อให้ UI ไม่พัง (แต่เราอาจจะไม่ได้ใช้ structure เดิมแล้ว)
 }
 
 export interface SectionContent {
     id: string;
     content: string;
     chapter_name: string;
-    category_id?: string; // เพิ่ม optional
-    status?: string;     // เพิ่ม optional
-    similarity?: number; // เพิ่ม optional
+    category_id?: string;
+    status?: string;
+    similarity?: number;
+    pageNumber?: number; // ✅ เพิ่ม Page Number
 }
 
 export interface ConstitutionContent {
@@ -44,19 +42,38 @@ export interface ConstitutionContent {
 // Helper: แปลง Rich JSON เป็น Flat List
 const transformRichData = (richData: any[], id: string, name: string) => {
     const flatSections: SectionContent[] = [];
+    // Mapping format: Array of last section numbers per page.
+    // Index 0 = Page 1, Index 1 = Page 2, etc.
+    const pageMapping: number[] = PDF_PAGE_MAPPING[id] || [];
 
     // ตรวจสอบว่า richData เป็น Array จริงไหม
     if (Array.isArray(richData)) {
         richData.forEach((cat: any) => {
             if (cat.sections) {
                 cat.sections.forEach((sec: any) => {
+                    const secId = parseInt(sec.section_number);
+
+                    // Logic: Find the first page where this section is <= the page's last section
+                    let pageNum = 1;
+                    if (!isNaN(secId) && pageMapping.length > 0) {
+                        const foundIndex = pageMapping.findIndex(lastSec => secId <= lastSec);
+                        if (foundIndex !== -1) {
+                            pageNum = foundIndex + 1; // 0-based index -> 1-based page
+                        } else {
+                            // If greater than the last mapped section, assume it's on the next page(s)
+                            // or just default to the last known page + 1 (or allow it to overflow)
+                            pageNum = pageMapping.length + 1;
+                        }
+                    }
+
                     flatSections.push({
                         id: sec.section_number,
                         content: sec.content,
                         chapter_name: cat.category_name,
                         category_id: cat.category_id,
                         status: sec.status,
-                        similarity: sec.similarity
+                        similarity: sec.similarity,
+                        pageNumber: pageNum
                     });
                 });
             }
@@ -70,66 +87,73 @@ const transformRichData = (richData: any[], id: string, name: string) => {
         richData: richData
     };
 };
-export interface Page {
-    categoryId: string;
-    pageRatio: number;
-}
 
 export const getConstitutionData = (id: string) => {
-    // 1. หา Meta Data
-    const meta = (overviewRaw.constitutions as any[]).find(c => c.id === id);
-
-    // 2. Logic การโหลดเนื้อหา
     let content: ConstitutionContent | undefined;
+    let year = 0;
+    let name = "";
 
     switch (id) {
         case 'con2475temp':
-            // ถ้าคุณมีไฟล์ temp แยก ให้เปลี่ยน rich2475Perm เป็น rich2475Temp ตรงนี้
-            content = transformRichData(rich2475Temp, id, "พระราชบัญญัติธรรมนูญฯ ๒๔๗๕ (ชั่วคราว)");
+            name = "พระราชบัญญัติธรรมนูญฯ ๒๔๗๕ (ชั่วคราว)";
+            year = 2475;
+            content = transformRichData(rich2475Temp, id, name);
             break;
 
         case 'con2475':
-            content = transformRichData(rich2475Perm, id, "รัฐธรรมนูญแห่งราชอาณาจักรสยาม ๒๔๗๕");
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรสยาม ๒๔๗๕";
+            year = 2475;
+            content = transformRichData(rich2475Perm, id, name);
+            break;
+
+        case 'con2489':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๔๘๙";
+            year = 2489;
+            content = transformRichData(rich2489Perm, id, name);
             break;
 
         default:
-            // กรณีอื่นๆ (2540, 2560) โหลดแบบเก่า
-            content = (contentRaw as unknown as ConstitutionContent[]).find(c => c.id === id);
+            name = "Unknown";
+            content = transformRichData([], id, name);
             break;
     }
 
     // 3. เตรียม Categories สำหรับ DNA Bar
-    // (พยายามใช้ข้อมูลจาก richData ถ้ามี เพื่อให้แม่นยำกว่า)
     let categories: CategoryOverview[] = [];
-
     if (content?.richData) {
-        // สร้าง Category List จากข้อมูลจริงที่มี
         categories = content.richData.map((cat: any) => ({
             id: cat.category_id,
-            title: cat.category_name, // ใช้ชื่อไทย
+            title: cat.category_name,
             color: CATEGORY_COLORS[cat.category_id] || "#ccc"
         }));
-    } else {
-        // Fallback ใช้ Meta Data เดิม
-        categories = meta?.pages.flat().map((p: any) => ({
-            id: p.categoryId,
-            title: p.categoryId, // ตรงนี้อาจจะเป็นอังกฤษอยู่ ถ้าอยากได้ไทยต้องเขียน Map เพิ่ม
-            color: CATEGORY_COLORS[p.categoryId] || "#ccc"
-        })) || [];
     }
+
+    // 4. สร้าง Meta Data (Mock ขึ้นมาเพื่อให้ UI ทำงานต่อได้)
+    // จำเป็นต้องมี structure 'pages' เพื่อให้ LiquidPDFLayout ไม่ Error
+    // แต่เราจะใส่เป็น Dummy ไปก่อน
+    const totalPages = PDF_TOTAL_PAGES[id] || 10;
+    const dummyPages = Array.from({ length: totalPages }, () => []);
+
+    const meta: ConstitutionMeta = {
+        id,
+        name,
+        year,
+        pageCount: totalPages,
+        pages: dummyPages
+    };
 
     return { meta, content, categories };
 };
 
 export const getAllConstitutions = () => {
-    return overviewRaw.constitutions.map(c => ({ id: c.id, year: c.year, name: c.name }));
+    return [
+        { id: 'con2475temp', year: 2475, name: 'ธรรมนูญการปกครองแผ่นดินสยามชั่วคราว' },
+        { id: 'con2475', year: 2475, name: 'รัฐธรรมนูญแห่งราชอาณาจักรสยาม' },
+        { id: 'con2489', year: 2489, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย 2489' },
+    ];
 };
 
 export const findPageForCategory = (meta: ConstitutionMeta, categoryId: string): number => {
-    if (!meta || !meta.pages) return 1;
-    // Find the first page that contains this category
-    const pageIndex = meta.pages.findIndex(pageItems =>
-        pageItems.some((item: any) => item.categoryId === categoryId)
-    );
-    return pageIndex === -1 ? 1 : pageIndex + 1; // 1-based index
+    // ฟังก์ชันนี้อาจจะไม่ได้ใช้แล้วถ้าเรา map page รายมาตรา แต่คงไว้กันแตก
+    return 1;
 };

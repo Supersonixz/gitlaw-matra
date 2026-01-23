@@ -13,47 +13,6 @@ interface Props {
     themeColor?: 'blue' | 'emerald';
 }
 
-// 🔥 1. ระบบ Manual Mapping: กำหนดหน้า PDF เองที่นี่
-const getPageForSection = (constitutionId: string, secId: string): number => {
-    const n = parseInt(secId);
-    if (isNaN(n)) return 1; // กรณีเป็นบทนำ หรือไม่ใช่ตัวเลข
-
-    // --- CASE A: ฉบับชั่วคราว (2475 Temporary) ---
-    if (constitutionId === 'con2475temp') {
-        // (ตัวอย่าง Logic เก่าของคุณ - ปรับแก้เลขหน้าตามไฟล์ PDF จริงได้เลย)
-        if (n <= 4) return 2;
-        if (n <= 8) return 3;
-        if (n <= 10) return 5;
-        if (n <= 11) return 6;
-        if (n <= 14) return 7;
-        if (n <= 18) return 8;
-        if (n <= 23) return 9;
-        if (n <= 26) return 10;
-        if (n <= 29) return 11;
-        if (n <= 32) return 12;
-        if (n <= 36) return 13;
-        return 14; // ค่า Default ถ้าเกิน
-    }
-
-    // --- CASE B: ฉบับถาวร (2475 Permanent) ---
-    if (constitutionId === 'con2475') {
-        // (ตัวอย่าง - ปรับแก้ตามไฟล์ PDF จริง)
-        if (n <= 2) return 1;
-        if (n <= 8) return 2;
-        if (n <= 15) return 3;
-        if (n <= 25) return 4;
-        if (n <= 35) return 5;
-        if (n <= 45) return 6;
-        if (n <= 55) return 7;
-        if (n <= 60) return 8;
-        return 9;
-    }
-
-    // --- CASE C: ฉบับอื่นๆ (2560 ฯลฯ) ---
-    // ถ้ายังไม่ได้ทำ Manual ให้ใช้สูตรคำนวณคร่าวๆ ไปก่อน
-    return Math.ceil(n / 5);
-};
-
 export default function ContentColumn({ content, highlightKeyword, onJumpToPage, themeColor = 'blue' }: Props) {
     if (!content) return <div className="p-10 text-center text-slate-400">Loading...</div>;
 
@@ -144,8 +103,8 @@ export default function ContentColumn({ content, highlightKeyword, onJumpToPage,
                             {/* Sections List */}
                             <div className="space-y-4 pl-4 border-l-2 border-slate-100 ml-2">
                                 {sections.map((sec) => {
-                                    // 🔥 เรียกใช้ฟังก์ชัน Manual Mapping ตรงนี้
-                                    const pageNum = getPageForSection(content.id, sec.id);
+                                    // 🔥 ใช้เลขหน้าจาก Data (ที่โหลดมาจาก pdfPageMapping)
+                                    const pageNum = sec.pageNumber || 1;
 
                                     return (
                                         <div key={sec.id} className="relative group/sec pl-2 transition-all hover:bg-slate-50 rounded-lg p-2 -ml-2">
