@@ -4,16 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # API Keys
-ZAI_API_KEY = os.getenv("ZAI_API_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-DB_NAME = "thai_constitution_db"
-
-# API Endpoint for Pro Plan (Coding Plan)
-# IMPORTANT: Adjust this if the specific endpoint for Coding Plan differs.
-# Based on chat history, it might be https://open.bigmodel.cn/api/coding/paas/v4 or standard.
-# For zhipuai SDK, we usually just need the API Key, but if we need to override the base URL:
-ZAI_BASE_URL = "https://open.bigmodel.cn/api/paas/v4/"
 
 # Categories (18 categories as per spec)
 CATEGORIES = {
