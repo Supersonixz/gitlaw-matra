@@ -3,3 +3,4 @@ pdfplumber
 requests
 python-dotenv
 google-genai
+easyocr
