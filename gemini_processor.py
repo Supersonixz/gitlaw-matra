@@ -2,7 +2,8 @@ import os
 import time
 import json
 import logging
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from config import GOOGLE_API_KEY
 
 
@@ -11,27 +12,32 @@ def process_pdf_with_gemini(pdf_path):
         logging.error("CRITICAL: GOOGLE_API_KEY not found via config.")
         raise ValueError("Google API Key missing.")
 
-    genai.configure(api_key=GOOGLE_API_KEY)
+    client = genai.Client(api_key=GOOGLE_API_KEY)
 
     logging.info(f"📤 Uploading {pdf_path} to Gemini...")
 
     try:
-        # Upload file (Temporary)
-        sample_file = genai.upload_file(path=pdf_path, display_name="Constitution Doc")
+        # Upload file
+        # google-genai v1 uploads directly
+        with open(pdf_path, "rb") as f:
+            sample_file = client.files.upload(
+                file=f,
+                config=types.UploadFileConfig(
+                    display_name="Constitution Doc",
+                    mime_type="application/pdf"
+                )
+            )
 
         # Wait for processing
         while sample_file.state.name == "PROCESSING":
             logging.info("⏳ Waiting for file processing on Google Server...")
             time.sleep(2)
-            sample_file = genai.get_file(sample_file.name)
+            sample_file = client.files.get(name=sample_file.name)
 
         if sample_file.state.name == "FAILED":
             raise ValueError("File upload/processing failed on Google side.")
 
         logging.info("✅ File processed! Asking Gemini to extract data...")
-
-        # Model Selection
-        model = genai.GenerativeModel(model_name="gemini-2.5-flash")
 
         # Prompt
         prompt = """
@@ -58,17 +64,44 @@ def process_pdf_with_gemini(pdf_path):
         ]
         """
 
-        # Generate Content
-        response = model.generate_content(
-            [sample_file, prompt],
-            generation_config={"response_mime_type": "application/json"},
-        )
+        # Retry Logic for Rate Limits
+        max_retries = 5
+        base_delay = 10  # Seconds
+        
+        for attempt in range(max_retries):
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[sample_file, prompt],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    ),
+                )
+                
+                # Cleanup
+                client.files.delete(name=sample_file.name)
+                
+                return json.loads(response.text)
 
-        # Cleanup
-        genai.delete_file(sample_file.name)
-
-        return json.loads(response.text)
+            except Exception as e:
+                # Check for rate limit errors (often 429)
+                error_str = str(e)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    wait_time = base_delay * (2 ** attempt)
+                    logging.warning(f"⚠️ Rate limit hit. Retrying in {wait_time}s... (Attempt {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                else:
+                    # Non-retryable error
+                    raise e
+        
+        raise RuntimeError("Max retries exceeded for Gemini API.")
 
     except Exception as e:
         logging.error(f"Gemini Processing Error: {e}")
+        # Attempt minimal cleanup if reference exists
+        try:
+            if 'sample_file' in locals():
+                 client.files.delete(name=sample_file.name)
+        except:
+            pass
         raise e

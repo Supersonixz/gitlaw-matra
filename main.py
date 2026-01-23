@@ -1,151 +1,209 @@
 import os
 import time
-import json  # Ensure json is imported
-from pymongo import MongoClient
-from config import MONGO_URI, DB_NAME, CATEGORIES
-from utils import log_error  # Removed extract_text_from_pdf as we use Gemini now
+import json
+import sys
+import logging
+import re
+import glob
+
+# --- Configuration ---
+RAW_DIR = "raw"  # โฟลเดอร์เก็บ PDF
+JSON_DIR = "json"  # โฟลเดอร์เก็บ JSON ผลลัพธ์
+
+
+# Configure Logging
+def setup_logging():
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
+    # Force UTF-8 for Windows Console
+    if sys.platform == "win32":
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+            sys.stderr.reconfigure(encoding="utf-8")
+        except AttributeError:
+            pass
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logger.addHandler(handler)
+
+
+setup_logging()
+
+from config import CATEGORIES
 from gemini_processor import process_pdf_with_gemini
 from agents import AgentSummarizer
-import logging
 
-# Initialize DB
-client = MongoClient(MONGO_URI)
-db = client[DB_NAME]
-
-# Initialize Agents
 agent_summarizer = AgentSummarizer()
 
 
-def process_constitution(year, pdf_path):
-    logging.info(f"🚀 Processing Year: {year} using Google Gemini Native OCR")
-
-    if not os.path.exists(pdf_path):
-        logging.error(f"File not found: {pdf_path}")
-        return
-
-    try:
-        # Step 1: Process entire PDF with Gemini
-        extracted_data = process_pdf_with_gemini(pdf_path)
-
-        # Gemini returns a list of objects directly
-        all_sections = (
-            extracted_data
-            if isinstance(extracted_data, list)
-            else extracted_data.get("sections", [])
-        )
-
-        logging.info(f"Found {len(all_sections)} sections via Gemini. Saving to DB...")
-
-        # Step 2: Save to DB
-        for section in all_sections:
-            try:
-                # Basic validation/defaulting
-                category_id = section.get("category_id", "uncategorized")
-                if category_id not in CATEGORIES:
-                    category_id = "uncategorized"
-
-                section_doc = {
-                    "_id": f"{year}_sec_{section.get('section_number')}",
-                    "constitution_year": year,
-                    "section_number": section.get("section_number"),
-                    "content": section.get("content"),
-                    "category_id": category_id,
-                    "raw_content": section.get("content"),
-                }
-
-                # Upsert to DB
-                db.sections.replace_one(
-                    {"_id": section_doc["_id"]}, section_doc, upsert=True
-                )
-                logging.info(
-                    f"Saved Section {section.get('section_number')} -> {category_id}"
-                )
-
-            except Exception as e:
-                log_error(year, f"Section {section.get('section_number')}", e)
-
-        # DEBUG: Save all sections to JSON for visual inspection
-        debug_filename = f"debug_sections_{year}_gemini.json"
-        with open(debug_filename, "w", encoding="utf-8") as f:
-            json.dump(all_sections, f, ensure_ascii=False, indent=2)
-        logging.info(f"💾 Saved debug output to {debug_filename}")
-
-        logging.info(f"✅ Finished Processing Year: {year}")
-
-    except Exception as e:
-        logging.error(f"Critical Pipeline Error: {e}")
+def get_year_from_filename(filename):
+    """ดึงปี 4 หลักจากชื่อไฟล์ เช่น '2475-1.pdf' -> 2475"""
+    match = re.search(r"(\d{4})", filename)
+    if match:
+        return int(match.group(1))
+    return 0  # หาไม่เจอ
 
 
-def generate_summaries(year):
-    logging.info(f"📝 Generating Summaries for Year: {year}")
+def process_pipeline(pdf_path):
+    # 1. เตรียม Path และชื่อไฟล์
+    filename = os.path.basename(pdf_path)  # "2475-1.pdf"
+    file_stem = os.path.splitext(filename)[0]  # "2475-1"
+    year = get_year_from_filename(filename)  # 2475
 
-    for cat_id in CATEGORIES:
-        sections = list(
-            db.sections.find({"constitution_year": year, "category_id": cat_id})
-        )
-        if not sections:
-            continue
+    # กำหนด path ไฟล์ผลลัพธ์ใน folder json/
+    output_json_path = os.path.join(JSON_DIR, f"{file_stem}.json")
+    summary_json_path = os.path.join(JSON_DIR, f"summary_{file_stem}.json")
 
-        combined_text = "\n".join([s["content"] for s in sections])
+    logging.info(f"🚀 Processing: {filename} (Year: {year})")
 
+    # --- Step 1: PDF to JSON (Extraction) ---
+    if os.path.exists(output_json_path):
+        logging.info(f"⚡ JSON exists at {output_json_path}. Skipping Extraction.")
+        # โหลดข้อมูลมาใช้ต่อใน Step 2
+        with open(output_json_path, "r", encoding="utf-8") as f:
+            all_sections = json.load(f)
+    else:
+        # ส่ง Gemini อ่าน
         try:
-            summary = agent_summarizer.run(combined_text)
-
-            summary_doc = {
-                "constitution_year": year,
-                "category_id": cat_id,
-                "ai_summary": summary,
-                "section_refs": [s["_id"] for s in sections],
-            }
-
-            # Upsert Summary
-            db.summaries.replace_one(
-                {"constitution_year": year, "category_id": cat_id},
-                summary_doc,
-                upsert=True,
+            extracted_data = process_pdf_with_gemini(pdf_path)
+            all_sections = (
+                extracted_data
+                if isinstance(extracted_data, list)
+                else extracted_data.get("sections", [])
             )
-            logging.info(f"Summarized {cat_id}")
-            time.sleep(1)
+
+            # บันทึกไฟล์ JSON โดยใช้ชื่อเดียวกับ PDF (ไม่ทับกันแน่นอน)
+            with open(output_json_path, "w", encoding="utf-8") as f:
+                json.dump(all_sections, f, ensure_ascii=False, indent=2)
+            logging.info(f"💾 Saved Raw Data to {output_json_path}")
 
         except Exception as e:
-            log_error(year, f"Summary {cat_id}", e)
+            logging.error(f"Failed to process PDF {filename}: {e}")
+            return
+
+    # --- Step 2: JSON to Summary ---
+    if os.path.exists(summary_json_path):
+        logging.info(f"⚡ Summary exists at {summary_json_path}. Skipping Summary.")
+        return
+
+    logging.info(f"📝 Generating Summaries for {filename}...")
+    generate_summaries_from_data(all_sections, year, summary_json_path)
+
+
+def generate_summaries_from_data(sections, year, output_path):
+    logging.info(f"⚡ Single-Shot Summarization for Year {year}...")
+
+    # 1. เตรียมข้อมูล (Data Preparation)
+    grouped_content_for_ai = {}
+    grouped_sections_raw = {}
+    for section in sections:
+        cat_id = section.get("category_id", "uncategorized")
+
+        # Init list
+        if cat_id not in grouped_content_for_ai:
+            grouped_content_for_ai[cat_id] = []
+            grouped_sections_raw[cat_id] = []
+
+        # เก็บ Text ให้ AI (ใส่เลขมาตราให้อ่านง่าย)
+        text_with_ref = f"[ม.{section.get('section_number')}] {section.get('content')}"
+        grouped_content_for_ai[cat_id].append(text_with_ref)
+
+        # เก็บ Object ดิบ
+        grouped_sections_raw[cat_id].append(
+            {
+                "section_number": section.get("section_number"),
+                "content": section.get("content"),
+            }
+        )
+
+    # 2. ส่งงานให้ Agent (AI ประมวลผล)
+    ai_results_dict = agent_summarizer.run_batch(grouped_content_for_ai)
+
+    if not ai_results_dict:
+        logging.error("❌ No summary data returned from AI. Skipping save.")
+        return
+
+    # 3. รวมร่าง (Merge AI Result + Raw Data)
+    final_output_list = []
+
+    for cat_id, cat_name in CATEGORIES.items():
+        if cat_id not in grouped_content_for_ai:
+            continue
+
+        ai_data = ai_results_dict.get(cat_id, {})
+        logging.info(
+            f"   > Summarizing: {cat_id} ({len(grouped_content_for_ai[cat_id])} sections)"
+        )
+
+        final_output_list.append(
+            {
+                "constitution_year": year,
+                "category_id": cat_id,
+                "category_name": cat_name,
+                # ส่วนบทวิเคราะห์
+                "ai_summary": ai_data.get("summary", "ไม่มีการสรุป"),
+                "key_change": ai_data.get("key_change", "-"),
+                "section_count": len(grouped_sections_raw[cat_id]),
+                # ส่วนหลักฐาน (Raw Data)
+                "sections": grouped_sections_raw.get(cat_id, []),
+            }
+        )
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(final_output_list, f, ensure_ascii=False, indent=2)
+
+    logging.info(f"✅ Saved Rich Summary (AI + Raw) to {output_path}")
 
 
 if __name__ == "__main__":
     import sys
-    import glob
 
-    # Check for GOOGLE_API_KEY
+    # ตรวจสอบ API Key
     if not os.getenv("GOOGLE_API_KEY"):
+        logging.error("CRITICAL: GOOGLE_API_KEY missing.")
+        exit(1)
+
+    # สร้าง Folder ปลายทางถ้ายังไม่มี
+    os.makedirs(JSON_DIR, exist_ok=True)
+
+    # ตรวจสอบ Folder ต้นทาง
+    if not os.path.exists(RAW_DIR):
         logging.error(
-            "CRITICAL: GOOGLE_API_KEY not found in environment variables. Please set it in .env file."
+            f"Folder '{RAW_DIR}' not found. Please create it and put PDFs inside."
         )
         exit(1)
 
-    target_year = 2560  # Default year, can be made dynamic
-    target_pdf = None
+    # --- ส่วนที่เพิ่มใหม่: เช็คว่า User สั่งเจาะจงไฟล์มาไหม? ---
+    target_pdfs = []
 
-    # 1. Try to get from arguments
+    # กรณี 1: User สั่งเจาะจง (เช่น python main.py 2475-1.pdf)
     if len(sys.argv) > 1:
-        target_pdf = sys.argv[1]
+        specific_filename = sys.argv[1]  # รับชื่อไฟล์จากคำสั่ง
+        specific_path = os.path.join(RAW_DIR, specific_filename)
 
-    # 2. If not provided, try to find the first PDF in the directory
-    if not target_pdf:
-        pdfs = glob.glob("*.pdf")
-        if pdfs:
-            target_pdf = pdfs[0]
-            logging.info(f"Auto-detected PDF: {target_pdf}")
+        if os.path.exists(specific_path):
+            target_pdfs = [specific_path]  # ทำแค่ไฟล์เดียว
+            print(f"🎯 Single Mode: Selected '{specific_filename}'")
         else:
-            logging.error(
-                "No PDF file found in directory. Please place a .pdf file here or provide path as argument."
-            )
+            logging.error(f"❌ File not found in {RAW_DIR}: {specific_filename}")
             exit(1)
 
-    # Run Process
-    process_constitution(target_year, target_pdf)
+    # กรณี 2: User ไม่ได้สั่งอะไรเลย -> เหมาหมด (Batch Mode)
+    else:
+        target_pdfs = glob.glob(os.path.join(RAW_DIR, "*.pdf"))
+        print(f"📂 Batch Mode: Found {len(target_pdfs)} PDFs. Processing all...")
 
-    # Generate Summaries (Now enabled using Gemini 1.5 Pro)
-    generate_summaries(target_year)
+    if not target_pdfs:
+        logging.error(f"No PDF files to process.")
+        exit(1)
 
-    print(f"\n✅ Pilot Test Complete for {target_pdf}")
-    print("Check 'pipeline.log' and MongoDB for results.")
+    # --- วนลูปทำงาน (รองรับทั้งไฟล์เดียวและหลายไฟล์) ---
+    for pdf_path in target_pdfs:
+        print("-" * 50)
+        process_pipeline(pdf_path)
+
+    print("\n🎉 All Done! Check the 'json' folder.")

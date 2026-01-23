@@ -1,41 +1,107 @@
 import logging
 import time
-import google.generativeai as genai
+import re
+import json
+from google import genai
+from google.genai import types
 from config import GOOGLE_API_KEY, CATEGORIES
 
-# Set up Google API (Using the same key as for PDF processing)
+# Set up Google API
 if not GOOGLE_API_KEY:
     logging.warning("GOOGLE_API_KEY is not set.")
+    client = None
 else:
-    genai.configure(api_key=GOOGLE_API_KEY)
+    client = genai.Client(api_key=GOOGLE_API_KEY)
 
 
 class AgentSummarizer:
     def __init__(self):
         # Switch to Gemini 1.5 Pro (Smarter model) for reasoning tasks
-        self.model = genai.GenerativeModel("gemini-2.5-flash")
+        # Or 2.5-flash if preferred for speed/cost
+        self.model_name = "gemini-2.5-flash"
 
-    def run(self, combined_text):
-        system_prompt = """Role: Political Science Professor (Specialist in Thai Constitutions).
-Task: Summarize the key essence of the provided sections.
-Target Audience: General public who wants to understand "Who holds the power?".
+    def _clean_json_response(self, text):
+        """Helper: พยายามแกะ JSON ออกจากข้อความขยะ หรือ Markdown"""
+        clean_text = text.strip()
+        # 1. ถอด Markdown Code Block
+        if clean_text.startswith("```json"):
+            clean_text = clean_text[7:]
+        if clean_text.startswith("```"):
+            clean_text = clean_text[3:]
+        if clean_text.endswith("```"):
+            clean_text = clean_text[:-3]
 
-Guidelines:
-1. Summarize in Thai language.
-2. Focus on: Who has authority? What are the limitations?
-3. Use neutral but sharp academic tone.
-4. Keep it under 3-4 sentences.
-5. If comparing changes, highlight what is new or removed.
-"""
+        # 2. ลอง Parse ตรงๆ
         try:
-            # Send Prompt
-            response = self.model.generate_content(
-                f"{system_prompt}\n\nContent to analyze:\n{combined_text}"
-            )
-            return response.text
+            return json.loads(clean_text.strip())
+        except json.JSONDecodeError:
+            pass
+
+        # 3. ใช้ Regex ค้นหา {...} (ท่าไม้ตาย)
+        try:
+            match = re.search(r"\{.*\}", text, re.DOTALL)
+            if match:
+                return json.loads(match.group(0))
         except Exception as e:
-            logging.error(f"Gemini Summarize Error: {e}")
-            return "ไม่สามารถสรุปได้ (AI Error)"
+            logging.warning(f"JSON Parsing failed: {e}")
 
+        return {}
 
-# Other agents (Cleaner, Classifier) are removed as their tasks are handled by the main pipeline (gemini_processor).
+    def run_batch(self, grouped_content_dict):
+        if not client:
+            return {}
+
+        content_json_str = json.dumps(
+            grouped_content_dict, ensure_ascii=False, indent=2
+        )
+        target_cats = list(CATEGORIES.keys())
+
+        system_prompt = f"""
+        Role: Political Science Professor (Thai Constitution Specialist).
+        Task: Analyze the provided constitution content (grouped by categories) and summarize EACH category.
+        
+        Target Categories: {target_cats}
+
+        Input Format: A JSON object where keys are category IDs and values are lists of sections.
+        
+        Output Requirement:
+        Return a SINGLE JSON object where:
+        - Key = category_id (must match input keys exactly)
+        - Value = An object containing:
+            - "summary": (String) Summary in Thai (neutral, academic, max 3 sentences).
+            - "key_change": (String) A short highlight of power dynamics or significant changes.
+        
+        Constraint: Strictly Output valid JSON only. No markdown.
+        """
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = client.models.generate_content(
+                    model=self.model_name,
+                    contents=[
+                        system_prompt,
+                        f"[DATA START]\n{content_json_str}\n[DATA END]",
+                    ],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    ),
+                )
+
+                # เรียกใช้ Helper ที่เราเตรียมไว้
+                result = self._clean_json_response(response.text)
+
+                if result:
+                    return result
+                else:
+                    logging.warning(
+                        f"⚠️ Empty/Invalid JSON from AI (Attempt {attempt+1})"
+                    )
+                    time.sleep(2)
+
+            except Exception as e:
+                logging.warning(f"⚠️ Batch Summary Error (Attempt {attempt+1}): {e}")
+                time.sleep(5)
+
+        logging.error("❌ Failed to generate batch summary after retries.")
+        return {}

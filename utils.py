@@ -1,18 +1,21 @@
 import pdfplumber
 import logging
+import sys
 
 # Configure logging
+# FIX: ระบุ encoding='utf-8' เพื่อให้เขียน Emoji ลงไฟล์ได้โดยไม่พัง
+file_handler = logging.FileHandler("pipeline.log", encoding="utf-8")
+stream_handler = logging.StreamHandler(sys.stdout)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("pipeline.log"), logging.StreamHandler()],
+    handlers=[file_handler, stream_handler],
 )
-
 
 def extract_text_from_pdf(pdf_path):
     """
     Extracts text from a PDF file page by page.
-    Returns a list of strings, where each string is the text of a page.
     """
     logging.info(f"Extracting text from: {pdf_path}")
     pages_text = []
@@ -31,9 +34,5 @@ def extract_text_from_pdf(pdf_path):
     logging.info(f"Extracted {len(pages_text)} pages.")
     return pages_text
 
-
 def log_error(year, context, error):
-    """
-    Logs an error with specific context.
-    """
     logging.error(f"Error in Year {year}: {error} | Context: {str(context)[:100]}...")
