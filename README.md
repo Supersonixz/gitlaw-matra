@@ -1,48 +1,36 @@
-# Thai Constitution Semantic Engine Pipeline
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-This project processes Thai Constitution PDF files into a structured json using Python and Google Agents.
+## Getting Started
 
-## Prerequisites
+First, run the development server:
 
-- Python 3.8+
-- Google API Key
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-## Setup
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-1.  **Create and Activate Virtual Environment:**
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-2.  **Install Dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-3.  **Environment Variables:**
-    Create a `.env` file in the root directory:
-    ```env
-    GOOGLE_API_KEY=your_google_api_key
-    ```
+## Learn More
 
-## Usage
+To learn more about Next.js, take a look at the following resources:
 
-1.  Place your PDF files in the project directory (e.g., `constitution_2560.pdf`).
-2.  Edit `main.py` to target your specific PDF file and Year:
-    ```python
-    if __name__ == "__main__":
-        process_constitution(2560, "constitution_2560.pdf")
-    ```
-3.  Run the pipeline:
-    ```bash
-    # Ensure venv is activated
-    python main.py
-    ```
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Structure
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-- `main.py`: Orchestrator script.
-- `agents.py`: AI Agent logic (Cleaner, Classifier, Summarizer).
-- `utils.py`: PDF extraction utilities.
-- `config.py`: Configuration and Category definitions.
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
