@@ -14,14 +14,6 @@ export interface CategoryOverview {
     color: string;
 }
 
-export interface ConstitutionMeta {
-    pageCount: number;
-    id: string;
-    name: string;
-    year: number;
-    pages: any[][]; // เก็บไว้เพื่อให้ UI ไม่พัง (แต่เราอาจจะไม่ได้ใช้ structure เดิมแล้ว)
-}
-
 export interface SectionContent {
     id: string;
     content: string;
@@ -30,27 +22,66 @@ export interface SectionContent {
     status?: string;
     similarity?: number;
     pageNumber?: number; // ✅ เพิ่ม Page Number
+    ai_summary?: string;
+    key_change?: string;
+}
+
+// --- Rich Data Interfaces (match JSON structure) ---
+export interface RichSection {
+    section_number: string;
+    content: string;
+    category_id: string;
+    status: string;
+    similarity: number;
+}
+
+export interface RichCategory {
+    constitution_year: number;
+    category_id: string;
+    category_name: string;
+    ai_summary: string;
+    key_change: string;
+    section_count: number;
+    sections: RichSection[];
+}
+
+export interface PageRatio {
+    categoryId: string;
+    pageRatio: number;
+}
+
+export interface Constitution {
+    id: string;
+    year: number | string;
+    name: string;
+}
+
+export interface ConstitutionMeta {
+    pageCount: number;
+    id: string;
+    name: string;
+    year: number;
+    pages: PageRatio[][]; // Updated to strict type
 }
 
 export interface ConstitutionContent {
     id: string;
     name: string;
     sections: SectionContent[];
-    richData?: any[];
+    richData?: RichCategory[];
 }
 
 // Helper: แปลง Rich JSON เป็น Flat List
-const transformRichData = (richData: any[], id: string, name: string) => {
+const transformRichData = (richData: RichCategory[], id: string, name: string) => {
     const flatSections: SectionContent[] = [];
     // Mapping format: Array of last section numbers per page.
     // Index 0 = Page 1, Index 1 = Page 2, etc.
     const pageMapping: number[] = PDF_PAGE_MAPPING[id] || [];
 
-    // ตรวจสอบว่า richData เป็น Array จริงไหม
     if (Array.isArray(richData)) {
-        richData.forEach((cat: any) => {
+        richData.forEach((cat: RichCategory) => {
             if (cat.sections) {
-                cat.sections.forEach((sec: any) => {
+                cat.sections.forEach((sec: RichSection) => {
                     const secId = parseInt(sec.section_number);
 
                     // Logic: Find the first page where this section is <= the page's last section
@@ -73,7 +104,9 @@ const transformRichData = (richData: any[], id: string, name: string) => {
                         category_id: cat.category_id,
                         status: sec.status,
                         similarity: sec.similarity,
-                        pageNumber: pageNum
+                        pageNumber: pageNum,
+                        ai_summary: cat.ai_summary,
+                        key_change: cat.key_change
                     });
                 });
             }
@@ -121,25 +154,48 @@ export const getConstitutionData = (id: string) => {
     // 3. เตรียม Categories สำหรับ DNA Bar
     let categories: CategoryOverview[] = [];
     if (content?.richData) {
-        categories = content.richData.map((cat: any) => ({
+        categories = content.richData.map((cat: RichCategory) => ({
             id: cat.category_id,
             title: cat.category_name,
             color: CATEGORY_COLORS[cat.category_id] || "#ccc"
         }));
     }
 
-    // 4. สร้าง Meta Data (Mock ขึ้นมาเพื่อให้ UI ทำงานต่อได้)
-    // จำเป็นต้องมี structure 'pages' เพื่อให้ LiquidPDFLayout ไม่ Error
-    // แต่เราจะใส่เป็น Dummy ไปก่อน
+    // คำนวณ Ratio ตามความยาวตัวอักษรจริง
     const totalPages = PDF_TOTAL_PAGES[id] || 10;
-    const dummyPages = Array.from({ length: totalPages }, () => []);
+
+    // Calculate total character count
+    let totalLength = 0;
+    const catLengths: Record<string, number> = {};
+
+    content?.sections.forEach(sec => {
+        const len = sec.content.length;
+        totalLength += len;
+
+        const catId = sec.category_id || 'uncategorized';
+        catLengths[catId] = (catLengths[catId] || 0) + len;
+    });
+
+    //simple ratio
+    const calculatedPages: PageRatio[][] = Array.from({ length: totalPages }, () => []);
+
+    // Distribute ratios
+    if (totalLength > 0) {
+        Object.keys(catLengths).forEach(catId => {
+            const ratio = (catLengths[catId] / totalLength) * totalPages;
+            calculatedPages[0].push({
+                categoryId: catId,
+                pageRatio: ratio
+            });
+        });
+    }
 
     const meta: ConstitutionMeta = {
         id,
         name,
         year,
         pageCount: totalPages,
-        pages: dummyPages
+        pages: calculatedPages
     };
 
     return { meta, content, categories };
@@ -151,9 +207,4 @@ export const getAllConstitutions = () => {
         { id: 'con2475', year: 2475, name: 'รัฐธรรมนูญแห่งราชอาณาจักรสยาม' },
         { id: 'con2489', year: 2489, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย 2489' },
     ];
-};
-
-export const findPageForCategory = (meta: ConstitutionMeta, categoryId: string): number => {
-    // ฟังก์ชันนี้อาจจะไม่ได้ใช้แล้วถ้าเรา map page รายมาตรา แต่คงไว้กันแตก
-    return 1;
 };

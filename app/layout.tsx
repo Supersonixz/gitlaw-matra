@@ -16,7 +16,7 @@ const sarabun = Sarabun({
 });
 
 export const metadata: Metadata = {
-  title: "Thai Constitution DNA",
+  title: "Thai Matra Diff",
   description: "Visualizing the Evolution of Thai Constitutions",
 };
 

@@ -4,7 +4,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
     general: "#E53E3E",         // แดงเข้ม (ชาติ)
 
     // --- สถาบัน ---
-    monarchy: "#D69E2E",        // ทองเข้ม (Yellow Gold) - อ่านง่ายกว่าเหลืองสด
+    monarchy: "#D69E2E",        // ทองเข้ม (Yellow Gold)
 
     // --- ประชาชน & นโยบาย ---
     rights_duties: "#0BC5EA",   // ฟ้าสว่าง (Cyan) - สิทธิเสรีภาพ
@@ -14,7 +14,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
     reform: "#9F7AEA",          // ม่วงอ่อน (Purple) - การเปลี่ยนแปลง
     amendment: "#ED64A6",       // ชมพู (Pink) - การแก้ไข
 
-    // --- 3 อำนาจหลัก (ต้องแยกให้ชัด) ---
+    // --- 3 อำนาจหลัก ---
     legislative: "#DD6B20",     // ส้มเข้ม (Orange) - สภา/นิติบัญญัติ
     executive: "#3182CE",       // น้ำเงิน (Blue) - รัฐบาล/บริหาร
     judicial: "#1A365D",        // กรมท่า (Navy) - ศาล/ตุลาการ (เข้มสุด)
@@ -28,7 +28,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
     // --- การปกครอง ---
     local_admin: "#38B2AC",       // เขียวมิ้นท์ - ท้องถิ่น
 
-    // --- อำนาจพิเศษ (โดดเด่นออกมาเลย) ---
+    // --- อำนาจพิเศษ ---
     coup_power: "#2F4F4F",        // เขียวขี้ม้าเข้ม (Dark Slate Gray) - ทหาร/คณะรัฐประหาร
 
     // --- บทส่งท้าย ---

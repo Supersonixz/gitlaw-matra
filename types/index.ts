@@ -1,34 +1,3 @@
-export type DiffStatus = 'modified' | 'added' | 'deleted' | 'unchanged' | 'VERIFIED' | 'REVIEW_NEEDED' | 'OCR_ONLY';
-
-export interface Section {
-    section_number: string;
-    content: string;
-    // เพิ่มฟิลด์ใหม่ (Optional)
-    status?: DiffStatus;
-    similarity?: number;
-}
-
-// โครงสร้างข้อมูลแบบ Rich (ที่มี AI Summary)
-export interface RichCategoryData {
-    category_id: string;
-    category_name: string;
-    ai_summary: string;
-    key_change: string;
-    section_count: number;
-    sections: Section[];
-}
-export interface CategoryData {
-    constitution_year: number;
-    category_id: string;
-    category_name: string;
-    ai_summary: string;
-    key_change: string;
-    section_count: number;
-    sections: Section[];
-    status?: DiffStatus;
-}
-
-// ลอก Config จาก Python มาเพื่อให้ลำดับหมวดหมู่ตรงกัน
 export const CATEGORY_ORDER = [
     { id: "preamble", name: "คำปรารภ" },
     { id: "general", name: "บททั่วไป" },
