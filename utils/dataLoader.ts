@@ -8,7 +8,7 @@ import rich2502Temp from '@/backend/json_output/final/con2502temp_full_summary.j
 import rich2511Perm from '@/backend/json_output/final/con2511_full_summary.json';
 import rich2515Temp from '@/backend/json_output/final/con2515temp_full_summary.json';
 import rich2517Perm from '@/backend/json_output/final/con2517_full_summary.json';
-import rich2519Perm from '@/backend/json_output/final/con2519_full_summary.json';
+import rich2519Temp from '@/backend/json_output/final/con2519temp_full_summary.json';
 import rich2520Temp from '@/backend/json_output/final/con2520temp_full_summary.json';
 import rich2521Perm from '@/backend/json_output/final/con2521_full_summary.json';
 import rich2534Perm from '@/backend/json_output/final/con2534_full_summary.json';
@@ -200,10 +200,10 @@ export const getConstitutionData = (id: string) => {
             year = 2517;
             content = transformRichData(rich2517Perm as RichCategory[], id, name);
             break;
-        case 'con2519':
-            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๑๙";
+        case 'con2519temp':
+            name = "ธรรมนูญการปกครองราชอาณาจักร ๒๕๑๙";
             year = 2519;
-            content = transformRichData(rich2519Perm as RichCategory[], id, name);
+            content = transformRichData(rich2519Temp as RichCategory[], id, name);
             break;
         case 'con2520temp':
             name = "ธรรมนูญการปกครองราชอาณาจักร ๒๕๒๐";
