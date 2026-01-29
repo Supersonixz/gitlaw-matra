@@ -1,8 +1,23 @@
-// src/utils/dataLoader.ts
-// 🔥 IMPORT ไฟล์ใหม่
 import rich2475Perm from '@/backend/json_output/final/con2475_full_summary.json';
 import rich2475Temp from '@/backend/json_output/final/con2475temp_full_summary.json';
 import rich2489Perm from '@/backend/json_output/final/con2489_full_summary.json';
+import rich2490Temp from '@/backend/json_output/final/con2490temp_full_summary.json';
+import rich2492Perm from '@/backend/json_output/final/con2492_full_summary.json';
+import rich2495Perm from '@/backend/json_output/final/con2495_full_summary.json';
+import rich2502Temp from '@/backend/json_output/final/con2502temp_full_summary.json';
+import rich2511Perm from '@/backend/json_output/final/con2511_full_summary.json';
+import rich2515Temp from '@/backend/json_output/final/con2515temp_full_summary.json';
+import rich2517Perm from '@/backend/json_output/final/con2517_full_summary.json';
+import rich2519Perm from '@/backend/json_output/final/con2519_full_summary.json';
+import rich2520Temp from '@/backend/json_output/final/con2520temp_full_summary.json';
+import rich2521Perm from '@/backend/json_output/final/con2521_full_summary.json';
+import rich2534Perm from '@/backend/json_output/final/con2534_full_summary.json';
+import rich2534Temp from '@/backend/json_output/final/con2534temp_full_summary.json';
+import rich2540Perm from '@/backend/json_output/final/con2540_full_summary.json';
+import rich2549Temp from '@/backend/json_output/final/con2549temp_full_summary.json';
+import rich2550Perm from '@/backend/json_output/final/con2550_full_summary.json';
+import rich2557Temp from '@/backend/json_output/final/con2557temp_full_summary.json';
+import rich2560Perm from '@/backend/json_output/final/con2560_full_summary.json';
 
 import { CATEGORY_COLORS } from '@/utils/categoryColors';
 import { PDF_PAGE_MAPPING, PDF_TOTAL_PAGES } from '@/mapping/pdfPageMapping';
@@ -20,19 +35,29 @@ export interface SectionContent {
     chapter_name: string;
     category_id?: string;
     status?: string;
+    type?: string;
     similarity?: number;
-    pageNumber?: number; // ✅ เพิ่ม Page Number
+    pageNumber?: number;
     ai_summary?: string;
     key_change?: string;
+    diff_versions?: {
+        ai_ocr?: string;
+        legacy_json?: string;
+    };
 }
 
-// --- Rich Data Interfaces (match JSON structure) ---
+// --- Rich Data Interfaces (match JSON structure from Backend) ---
 export interface RichSection {
-    section_number: string;
+    id: string;
     content: string;
-    category_id: string;
+    type: string;
     status: string;
     similarity: number;
+    category_id: string;
+    diff_versions?: {
+        ai_ocr: string;
+        legacy_json: string;
+    };
 }
 
 export interface RichCategory {
@@ -61,7 +86,7 @@ export interface ConstitutionMeta {
     id: string;
     name: string;
     year: number;
-    pages: PageRatio[][]; // Updated to strict type
+    pages: PageRatio[][];
 }
 
 export interface ConstitutionContent {
@@ -74,36 +99,34 @@ export interface ConstitutionContent {
 // Helper: แปลง Rich JSON เป็น Flat List
 const transformRichData = (richData: RichCategory[], id: string, name: string) => {
     const flatSections: SectionContent[] = [];
-    // Mapping format: Array of last section numbers per page.
-    // Index 0 = Page 1, Index 1 = Page 2, etc.
     const pageMapping: number[] = PDF_PAGE_MAPPING[id] || [];
 
     if (Array.isArray(richData)) {
         richData.forEach((cat: RichCategory) => {
             if (cat.sections) {
                 cat.sections.forEach((sec: RichSection) => {
-                    const secId = parseInt(sec.section_number);
+                    const numericPart = sec.id.match(/\d+/);
+                    const secId = numericPart ? parseInt(numericPart[0]) : 0;
 
-                    // Logic: Find the first page where this section is <= the page's last section
                     let pageNum = 1;
-                    if (!isNaN(secId) && pageMapping.length > 0) {
+                    if (secId > 0 && pageMapping.length > 0) {
                         const foundIndex = pageMapping.findIndex(lastSec => secId <= lastSec);
                         if (foundIndex !== -1) {
-                            pageNum = foundIndex + 1; // 0-based index -> 1-based page
+                            pageNum = foundIndex + 1;
                         } else {
-                            // If greater than the last mapped section, assume it's on the next page(s)
-                            // or just default to the last known page + 1 (or allow it to overflow)
                             pageNum = pageMapping.length + 1;
                         }
                     }
 
                     flatSections.push({
-                        id: sec.section_number,
+                        id: sec.id,
                         content: sec.content,
                         chapter_name: cat.category_name,
                         category_id: cat.category_id,
                         status: sec.status,
+                        type: sec.type,
                         similarity: sec.similarity,
+                        diff_versions: sec.diff_versions,
                         pageNumber: pageNum,
                         ai_summary: cat.ai_summary,
                         key_change: cat.key_change
@@ -128,23 +151,105 @@ export const getConstitutionData = (id: string) => {
 
     switch (id) {
         case 'con2475temp':
-            name = "พระราชบัญญัติธรรมนูญฯ ๒๔๗๕ (ชั่วคราว)";
+            name = "พระราชบัญญัติธรรมนูญการปกครองแผ่นดินสยามชั่วคราว ๒๔๗๕";
             year = 2475;
-            content = transformRichData(rich2475Temp, id, name);
+            content = transformRichData(rich2475Temp as RichCategory[], id, name);
             break;
-
         case 'con2475':
             name = "รัฐธรรมนูญแห่งราชอาณาจักรสยาม ๒๔๗๕";
             year = 2475;
-            content = transformRichData(rich2475Perm, id, name);
+            content = transformRichData(rich2475Perm as RichCategory[], id, name);
             break;
-
         case 'con2489':
             name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๔๘๙";
             year = 2489;
-            content = transformRichData(rich2489Perm, id, name);
+            content = transformRichData(rich2489Perm as RichCategory[], id, name);
             break;
-
+        case 'con2490temp':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย (ฉบับชั่วคราว) ๒๔๙๐";
+            year = 2490;
+            content = transformRichData(rich2490Temp as RichCategory[], id, name);
+            break;
+        case 'con2492':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๔๙๒";
+            year = 2492;
+            content = transformRichData(rich2492Perm as RichCategory[], id, name);
+            break;
+        case 'con2495':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๔๗๕ แก้ไขเพิ่มเติม ๒๔๙๕";
+            year = 2495;
+            content = transformRichData(rich2495Perm as RichCategory[], id, name);
+            break;
+        case 'con2502temp':
+            name = "ธรรมนูญการปกครองราชอาณาจักร ๒๕๐๒";
+            year = 2502;
+            content = transformRichData(rich2502Temp as RichCategory[], id, name);
+            break;
+        case 'con2511':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๑๑";
+            year = 2511;
+            content = transformRichData(rich2511Perm as RichCategory[], id, name);
+            break;
+        case 'con2515temp':
+            name = "ธรรมนูญการปกครองราชอาณาจักร ๒๕๑๕";
+            year = 2515;
+            content = transformRichData(rich2515Temp as RichCategory[], id, name);
+            break;
+        case 'con2517':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๑๗";
+            year = 2517;
+            content = transformRichData(rich2517Perm as RichCategory[], id, name);
+            break;
+        case 'con2519':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๑๙";
+            year = 2519;
+            content = transformRichData(rich2519Perm as RichCategory[], id, name);
+            break;
+        case 'con2520temp':
+            name = "ธรรมนูญการปกครองราชอาณาจักร ๒๕๒๐";
+            year = 2520;
+            content = transformRichData(rich2520Temp as RichCategory[], id, name);
+            break;
+        case 'con2521':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๒๑";
+            year = 2521;
+            content = transformRichData(rich2521Perm as RichCategory[], id, name);
+            break;
+        case 'con2534':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๓๔";
+            year = 2534;
+            content = transformRichData(rich2534Perm as RichCategory[], id, name);
+            break;
+        case 'con2534temp':
+            name = "ธรรมนูญการปกครองราชอาณาจักร ๒๕๓๔";
+            year = 2534;
+            content = transformRichData(rich2534Temp as RichCategory[], id, name);
+            break;
+        case 'con2540':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๔๐";
+            year = 2540;
+            content = transformRichData(rich2540Perm as RichCategory[], id, name);
+            break;
+        case 'con2549temp':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย (ฉบับชั่วคราว) ๒๕๔๙";
+            year = 2549;
+            content = transformRichData(rich2549Temp as RichCategory[], id, name);
+            break;
+        case 'con2550':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๕๐";
+            year = 2550;
+            content = transformRichData(rich2550Perm as RichCategory[], id, name);
+            break;
+        case 'con2557temp':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย (ฉบับชั่วคราว) ๒๕๕๗";
+            year = 2557;
+            content = transformRichData(rich2557Temp as RichCategory[], id, name);
+            break;
+        case 'con2560':
+            name = "รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๖๐";
+            year = 2560;
+            content = transformRichData(rich2560Perm as RichCategory[], id, name);
+            break;
         default:
             name = "Unknown";
             content = transformRichData([], id, name);
@@ -161,7 +266,7 @@ export const getConstitutionData = (id: string) => {
         }));
     }
 
-    // คำนวณ Ratio ตามความยาวตัวอักษรจริง
+    // 4. คำนวณ Page Ratio (DNA Bar)
     const totalPages = PDF_TOTAL_PAGES[id] || 10;
 
     // Calculate total character count
@@ -169,11 +274,13 @@ export const getConstitutionData = (id: string) => {
     const catLengths: Record<string, number> = {};
 
     content?.sections.forEach(sec => {
-        const len = sec.content.length;
-        totalLength += len;
+        if (sec.type === 'section' || !sec.type) {
+            const len = sec.content.length;
+            totalLength += len;
 
-        const catId = sec.category_id || 'uncategorized';
-        catLengths[catId] = (catLengths[catId] || 0) + len;
+            const catId = sec.category_id || 'uncategorized';
+            catLengths[catId] = (catLengths[catId] || 0) + len;
+        }
     });
 
     //simple ratio
@@ -183,10 +290,13 @@ export const getConstitutionData = (id: string) => {
     if (totalLength > 0) {
         Object.keys(catLengths).forEach(catId => {
             const ratio = (catLengths[catId] / totalLength) * totalPages;
-            calculatedPages[0].push({
-                categoryId: catId,
-                pageRatio: ratio
-            });
+
+            if (calculatedPages[0]) {
+                calculatedPages[0].push({
+                    categoryId: catId,
+                    pageRatio: ratio
+                });
+            }
         });
     }
 
@@ -203,8 +313,25 @@ export const getConstitutionData = (id: string) => {
 
 export const getAllConstitutions = () => {
     return [
-        { id: 'con2475temp', year: 2475, name: 'ธรรมนูญการปกครองแผ่นดินสยามชั่วคราว' },
-        { id: 'con2475', year: 2475, name: 'รัฐธรรมนูญแห่งราชอาณาจักรสยาม' },
-        { id: 'con2489', year: 2489, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย 2489' },
+        { id: 'con2475temp', year: 2475, name: 'พระราชบัญญัติธรรมนูญการปกครองแผ่นดินสยามชั่วคราว ๒๔๗๕' },
+        { id: 'con2475', year: 2475, name: 'รัฐธรรมนูญแห่งราชอาณาจักรสยาม ๒๔๗๕' },
+        { id: 'con2489', year: 2489, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๔๘๙' },
+        { id: 'con2490temp', year: 2490, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย (ฉบับชั่วคราว) ๒๔๙๐' },
+        { id: 'con2492', year: 2492, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๔๙๒' },
+        { id: 'con2495', year: 2495, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๔๗๕ แก้ไขเพิ่มเติม ๒๔๙๕' },
+        { id: 'con2502temp', year: 2502, name: 'ธรรมนูญการปกครองราชอาณาจักร ๒๕๐๒' },
+        { id: 'con2511', year: 2511, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๑๑' },
+        { id: 'con2515temp', year: 2515, name: 'ธรรมนูญการปกครองราชอาณาจักร ๒๕๑๕' },
+        { id: 'con2517', year: 2517, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๑๗' },
+        { id: 'con2519', year: 2519, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๑๙' },
+        { id: 'con2520temp', year: 2520, name: 'ธรรมนูญการปกครองราชอาณาจักร ๒๕๒๐' },
+        { id: 'con2521', year: 2521, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๒๑' },
+        { id: 'con2534', year: 2534, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๓๔' },
+        { id: 'con2534temp', year: 2534, name: 'ธรรมนูญการปกครองราชอาณาจักร ๒๕๓๔' },
+        { id: 'con2540', year: 2540, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๔๐' },
+        { id: 'con2549temp', year: 2549, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย (ฉบับชั่วคราว) ๒๕๔๙' },
+        { id: 'con2550', year: 2550, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๕๐' },
+        { id: 'con2557temp', year: 2557, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย (ฉบับชั่วคราว) ๒๕๕๗' },
+        { id: 'con2560', year: 2560, name: 'รัฐธรรมนูญแห่งราชอาณาจักรไทย ๒๕๖๐' },
     ];
 };

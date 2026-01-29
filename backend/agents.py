@@ -16,9 +16,7 @@ else:
 
 class AgentSummarizer:
     def __init__(self):
-        # Switch to Gemini 1.5 Pro (Smarter model) for reasoning tasks
-        # Or 2.5-flash if preferred for speed/cost
-        self.model_name = "gemini-2.5-flash"
+        self.model_name = "gemini-3-flash-preview" 
 
     def _clean_json_response(self, text):
         """Helper: พยายามแกะ JSON ออกจากข้อความขยะ หรือ Markdown"""
@@ -37,7 +35,7 @@ class AgentSummarizer:
         except json.JSONDecodeError:
             pass
 
-        # 3. ใช้ Regex ค้นหา {...} (ท่าไม้ตาย)
+        # 3. ใช้ Regex ค้นหา {...}
         try:
             match = re.search(r"\{.*\}", text, re.DOTALL)
             if match:
@@ -77,6 +75,7 @@ class AgentSummarizer:
         max_retries = 3
         for attempt in range(max_retries):
             try:
+                # เรียกใช้ Google GenAI (Gemini)
                 response = client.models.generate_content(
                     model=self.model_name,
                     contents=[
@@ -88,7 +87,6 @@ class AgentSummarizer:
                     ),
                 )
 
-                # เรียกใช้ Helper ที่เราเตรียมไว้
                 result = self._clean_json_response(response.text)
 
                 if result:
