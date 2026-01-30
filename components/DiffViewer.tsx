@@ -56,21 +56,39 @@ function DiffViewerComponent({ leftSections, rightSections, onJumpToPage, forceM
     }, [rawRows]);
 
     const groupedRows = useMemo(() => {
+        // Use a Map to ensure unique groups by Title (visual header)
+        // This handles cases where data might be interleaved or IDs slightly different
+        const groupsMap = new Map<string, { id: string; title: string; rows: DisplayRow[] }>();
         const groups: { id: string; title: string; rows: DisplayRow[] }[] = [];
+
         displayRows.forEach(row => {
-            const lastGroup = groups[groups.length - 1];
-            if (lastGroup && lastGroup.id === row.categoryId) {
-                lastGroup.rows.push(row);
+            const key = row.categoryTitle?.trim() || 'Unknown';
+
+            if (groupsMap.has(key)) {
+                groupsMap.get(key)!.rows.push(row);
             } else {
-                groups.push({
+                const newGroup = {
                     id: row.categoryId,
                     title: row.categoryTitle,
                     rows: [row]
-                });
+                };
+                groups.push(newGroup);
+                groupsMap.set(key, newGroup);
             }
         });
         return groups;
     }, [displayRows]);
+    const [expandedState, setExpandedState] = React.useState<Record<string, boolean>>({});
+
+    const toggleSection = React.useCallback((id: string) => {
+        setExpandedState(prev => ({ ...prev, [id]: !prev[id] }));
+    }, []);
+
+    // Also reset expanded state when data changes if needed, 
+    // but preserving it might be better. 
+    // However, if sections change completely, we might want to reset.
+    // For now, let's keep it simple.
+
     return (
         <div className="w-full h-full flex flex-col font-sans text-sm bg-slate-50/50">
 
@@ -94,6 +112,8 @@ function DiffViewerComponent({ leftSections, rightSections, onJumpToPage, forceM
                                 group={group}
                                 onJumpToPage={onJumpToPage}
                                 forceMobileMode={forceMobileMode}
+                                isExpanded={!!expandedState[group.id]}
+                                onToggle={() => toggleSection(group.id)}
                             />
                         </div>
                     )}

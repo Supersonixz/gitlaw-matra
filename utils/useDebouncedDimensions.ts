@@ -5,17 +5,22 @@ export function useDebouncedWindowWidth(delay: number = 150) {
 
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
+
         const handleResize = () => {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => setWidth(window.innerWidth), delay);
         };
 
-        setWidth(window.innerWidth);
+        // Avoid synchronous setState warning by scheduling update in next frame
+        const rafId = requestAnimationFrame(() => {
+            setWidth(window.innerWidth);
+        });
 
         window.addEventListener('resize', handleResize);
         return () => {
             window.removeEventListener('resize', handleResize);
             clearTimeout(timeoutId);
+            cancelAnimationFrame(rafId);
         };
     }, [delay]);
 
@@ -35,7 +40,7 @@ export function useDebouncedElementWidth(
         const observer = new ResizeObserver((entries) => {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => {
-                for (let entry of entries) {
+                for (const entry of entries) {
                     setWidth(entry.contentRect.width);
                 }
             }, delay);

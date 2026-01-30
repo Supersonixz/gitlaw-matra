@@ -33,10 +33,10 @@ const PDFSidebar = React.forwardRef<PDFSidebarRef, PDFSidebarProps>(({
     const virtuosoRef = useRef<VirtuosoHandle>(null);
     const [highlightPage, setHighlightPage] = useState<number | null>(null);
 
-    const pdfUrl = `/${data.id}.pdf`;
-    const pageCount = meta?.pageCount || 15;
-    const pageWidth = isMobile ? (windowWidth * 0.75) - 32 : 380;
-    const pageHeight = pageWidth * 1.414; // อัตราส่วน A4
+    const pdfUrl = React.useMemo(() => `/${data.id}.pdf`, [data.id]);
+    const pageCount = React.useMemo(() => meta?.pageCount || 15, [meta?.pageCount]);
+    const pageWidth = React.useMemo(() => isMobile ? (windowWidth * 0.75) - 32 : 380, [isMobile, windowWidth]);
+    const pageHeight = React.useMemo(() => pageWidth * 1.414, [pageWidth]); // อัตราส่วน A4
 
     useImperativeHandle(ref, () => ({
         scrollToPage: (pageNumber: number) => {
