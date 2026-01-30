@@ -15,7 +15,9 @@ interface Props {
     rightData: ConstitutionContent;
     leftMeta?: ConstitutionMeta;
     rightMeta?: ConstitutionMeta;
+
     headerCollapsed?: boolean;
+    targetCategory?: string | null;
 }
 
 const getSidebarStyle = (isOpen: boolean, side: 'left' | 'right') => {
@@ -42,7 +44,7 @@ const getSidebarStyle = (isOpen: boolean, side: 'left' | 'right') => {
     };
 };
 
-function LiquidPDFLayout({ leftData, rightData, leftMeta, rightMeta, headerCollapsed = false }: Props) {
+function LiquidPDFLayout({ leftData, rightData, leftMeta, rightMeta, headerCollapsed = false, targetCategory }: Props) {
     const [showLeftPdf, setShowLeftPdf] = useState(false);
     const [showRightPdf, setShowRightPdf] = useState(false);
 
@@ -170,6 +172,7 @@ function LiquidPDFLayout({ leftData, rightData, leftMeta, rightMeta, headerColla
                         rightSections={rightData.sections}
                         onJumpToPage={handleJump}
                         forceMobileMode={isContentNarrow}
+                        targetCategory={targetCategory}
                     />
                 </div>
             </div>

@@ -37,8 +37,8 @@ export default function WelcomeHero() {
 
     const sources = [
         { name: "WeVis ReConstitution", url: "https://reconstitution.wevis.info/" },
-        { name: "ELECT Constitution", url: "https://github.com/electinth/constitution" },
-        { name: "Parliament Museum", url: "https://parliamentmuseum.go.th/constitution.html" }
+        { name: "Parliament Museum", url: "https://parliamentmuseum.go.th/constitution.html" },
+        { name: "OpenTypoon OCR", url: "https://opentyphoon.ai/model/typhoon-ocr" }
     ];
 
     const [isLegalOpen, setIsLegalOpen] = React.useState(false);

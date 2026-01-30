@@ -15,7 +15,10 @@ interface Props {
     setLeftId: (id: string) => void;
     rightId: string;
     setRightId: (id: string) => void;
+
     allConstitutions: Constitution[];
+    // Interactivity
+    onCategoryClick?: (id: string) => void;
 }
 
 // 1. Calculate "Weight" of each category (Total Page Ratio)
@@ -33,7 +36,7 @@ const calculateWeight = (meta: ConstitutionMeta) => {
 
 function ConceptDiff({
     leftMeta, rightMeta, categories, isCollapsed, onToggleCollapse,
-    leftId, setLeftId, rightId, setRightId, allConstitutions
+    leftId, setLeftId, rightId, setRightId, allConstitutions, onCategoryClick
 }: Props) {
 
     const leftWeights = useMemo(() => calculateWeight(leftMeta), [leftMeta]);
@@ -59,15 +62,22 @@ function ConceptDiff({
             `}>
                 {CATEGORY_ORDER.map(cat => {
                     const color = CATEGORY_COLORS[cat.id] || "#ccc";
+                    const hasContent = (leftWeights[cat.id] || 0) > 0 || (rightWeights[cat.id] || 0) > 0;
+
                     return (
-                        <div
+                        <button
                             key={cat.id}
-                            className="flex items-center gap-1.5 shrink-0 bg-slate-50 px-2 py-1 rounded-full border border-slate-100 text-[10px] font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-default"
+                            onClick={() => hasContent && onCategoryClick?.(cat.id)}
+                            disabled={!hasContent}
+                            className={`flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-full border text-[10px] font-medium transition-colors ${hasContent
+                                    ? 'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100 hover:border-blue-200 hover:text-blue-600 cursor-pointer'
+                                    : 'bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed grayscale opacity-60'
+                                }`}
                             title={cat.name}
                         >
                             <span className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: color }}></span>
                             <span className="whitespace-nowrap">{cat.name}</span>
-                        </div>
+                        </button>
                     );
                 })}
             </div>

@@ -32,6 +32,7 @@ export default function DeepLinkView({
 
     const [isLoading, setIsLoading] = useState(false);
     const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+    const [targetCategory, setTargetCategory] = useState<string | null>(null);
 
     // กัน Race Condition
     const activeRequest = useRef<string>("");
@@ -135,6 +136,7 @@ export default function DeepLinkView({
                     rightId={rightId}
                     setRightId={handleRightChange}
                     allConstitutions={allConstitutions}
+                    onCategoryClick={setTargetCategory}
                 />
             </div>
 
@@ -147,6 +149,7 @@ export default function DeepLinkView({
                         leftMeta={leftData.meta}
                         rightMeta={rightData.meta}
                         headerCollapsed={isHeaderCollapsed}
+                        targetCategory={targetCategory}
                     />
                 </div>
             </div>
