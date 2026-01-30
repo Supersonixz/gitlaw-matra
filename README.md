@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Matra (มาตรา)
+
+**Matra** is a project born from a simple question: *Why is it so hard to see how our laws have changed?*
+
+## The Motivation
+
+Thailand has had over 20 constitutions in its history. Each version reflects the political landscape and the will of the people at that time. However, for the average citizen, understanding these changes is incredibly difficult. Comparing legal texts manually is tedious, prone to error, and often requires specialized knowledge.
+
+We believe that **transparency is the foundation of democracy**. If people cannot easily see what has changed in their supreme law, they cannot fully participate in the democratic process.
+
+## Our Goal
+
+We created **Matra** ("Section" in Thai) to make Thai Constitutions **accessible** and **transparent**.
+
+We rely on technology not to show off, but to solve a human problem:
+- **To Visualize**: Transforming dense text into clear, color-coded visual comparisons.
+- **To Understand**: Helping people see not just *what* changed, but *where* and *how*.
+- **To Empower**: Giving students, researchers, and citizens a tool to explore their own history without barriers.
+
+---
+
+## How it Works
+
+Matra provides a clean interface to compare any two versions of the Thai Constitution side-by-side.
+
+- **Semantic Awareness**: It tries to understand the structure of the law, matching sections intelligently even if the wording or numbering shifts slightly.
+- **Visual Clarity**: Changes are highlighted (Green for additions, Red for removals) so you can spot differences instantly.
+- **Accessibility Focus**: We've designed it to be fast and responsive, ensuring that even large documents with hundreds of sections can be browsed smoothly by anyone, on any device.
 
 ## Getting Started
 
-First, run the development server:
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. **Run Development Server**:
+   ```bash
+   npm run dev
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. **Open Browser**:
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+*Built with ❤️ for Thai Democracy.*
