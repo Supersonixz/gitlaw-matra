@@ -16,8 +16,32 @@ const sarabun = Sarabun({
 });
 
 export const metadata: Metadata = {
-  title: "Thai Matra Diff",
-  description: "Visualizing the Evolution of Thai Constitutions",
+  title: "Thai Matra Diff - Visualizing Constitutional Evolution",
+  description: "Explore and compare the evolution of Thai Constitutions side-by-side. Analyze changes in specific Matras (Articles) across different eras to understand the legal history of Thailand.",
+  keywords: ["Thai Constitution", "Thailand Law", "Ratthathammanun", "Matra Diff", "Legal Comparison", "Thai Politics"],
+  authors: [{ name: "GitLaw Team" }],
+  openGraph: {
+    title: "Thai Matra Diff - Visualizing Constitutional Evolution",
+    description: "Compare Thai Constitutions side-by-side. Visualize how the law has changed over time.",
+    url: "https://www.matradiff.org", // Assuming Vercel deployment or similar
+    siteName: "Thai Matra Diff",
+    locale: "th_TH",
+    type: "website",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Thai Matra Diff Preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Thai Matra Diff",
+    description: "Visualizing the Evolution of Thai Constitutions",
+    images: ["/opengraph-image.png"],
+  },
 };
 
 export default function RootLayout({
