@@ -113,44 +113,52 @@ export default function DeepLinkView({
     }, []);
 
     return (
-        <main className="bg-slate-200 font-sans min-h-screen flex flex-col">
-            <div className="relative z-10">
-                <WelcomeHero />
-            </div>
+        <main className="h-screen w-full bg-slate-50 overflow-hidden">
+            {/* Scroll Snap Container (Vertical) */}
+            <div className="h-full w-full overflow-y-auto snap-y snap-mandatory scroll-smooth">
 
-            <div className="shrink-0 relative">
-                {isLoading && (
-                    <div className="absolute top-0 left-0 w-full h-1 bg-blue-200 overflow-hidden z-50">
-                        <div className="h-full bg-blue-600 animate-pulse w-full origin-left transform scale-x-50"></div>
+                {/* Hero Section - Snap Start */}
+                <div className="w-full min-h-screen shrink-0 snap-start flex flex-col justify-center relative z-10">
+                    <WelcomeHero />
+                </div>
+
+                {/* Workspace Section - Snap Start */}
+                <div id="workspace" className="w-full min-h-screen shrink-0 snap-start bg-slate-200 flex flex-col relative">
+                    <div className="shrink-0 sticky top-0 z-30 bg-slate-200/95 backdrop-blur-sm">
+                        {isLoading && (
+                            <div className="absolute top-0 left-0 w-full h-1 bg-blue-200 overflow-hidden z-50">
+                                <div className="h-full bg-blue-600 animate-pulse w-full origin-left transform scale-x-50"></div>
+                            </div>
+                        )}
+
+                        <ConceptDiff
+                            leftMeta={leftData.meta}
+                            rightMeta={rightData.meta}
+                            categories={leftData.categories}
+                            isCollapsed={isHeaderCollapsed}
+                            onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
+                            leftId={leftId}
+                            setLeftId={handleLeftChange}
+                            rightId={rightId}
+                            setRightId={handleRightChange}
+                            allConstitutions={allConstitutions}
+                            onCategoryClick={setTargetCategory}
+                        />
                     </div>
-                )}
 
-                <ConceptDiff
-                    leftMeta={leftData.meta}
-                    rightMeta={rightData.meta}
-                    categories={leftData.categories}
-                    isCollapsed={isHeaderCollapsed}
-                    onToggleCollapse={() => setIsHeaderCollapsed(!isHeaderCollapsed)}
-                    leftId={leftId}
-                    setLeftId={handleLeftChange}
-                    rightId={rightId}
-                    setRightId={handleRightChange}
-                    allConstitutions={allConstitutions}
-                    onCategoryClick={setTargetCategory}
-                />
-            </div>
-
-            <div id="workspace" className="flex-1 overflow-hidden flex flex-col relative min-h-0">
-                <div className="flex-1 min-h-0">
-                    {/* Memoized Component */}
-                    <MemoizedLayout
-                        leftData={leftData.content}
-                        rightData={rightData.content}
-                        leftMeta={leftData.meta}
-                        rightMeta={rightData.meta}
-                        headerCollapsed={isHeaderCollapsed}
-                        targetCategory={targetCategory}
-                    />
+                    <div className="flex-1 overflow-hidden flex flex-col relative min-h-0 bg-white shadow-inner">
+                        <div className="flex-1 min-h-0">
+                            {/* Memoized Component */}
+                            <MemoizedLayout
+                                leftData={leftData.content}
+                                rightData={rightData.content}
+                                leftMeta={leftData.meta}
+                                rightMeta={rightData.meta}
+                                headerCollapsed={isHeaderCollapsed}
+                                targetCategory={targetCategory}
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

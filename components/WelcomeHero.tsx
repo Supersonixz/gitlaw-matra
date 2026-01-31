@@ -71,14 +71,30 @@ export default function WelcomeHero() {
             {/* Static Glows - Optimized: Removed mix-blend-multiply which causes heavy repaints on resize */}
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl pointer-events-none"></div>
+            {/* GitHub Corner Link */}
+            <a
+                href="https://github.com/min23asdw/gitlaw-matra"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-900 transition-colors z-50"
+                title="View on GitHub"
+            >
+                <svg viewBox="0 0 24 24" className="w-8 h-8 fill-current" aria-hidden="true">
+                    <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+                </svg>
+            </a>
 
             <div className="relative z-10 px-4 sm:px-6 max-w-6xl mx-auto w-full flex flex-col ">
 
                 {/* Hero Header */}
                 <div className="text-center space-y-8 mb-10 animate-fade-in-up w-auto">
-                    <div className="inline-flex items-center justify-center pl-2 pr-4 py-1.5 rounded-full bg-white border border-slate-200 text-slate-600 text-sm font-medium tracking-wide mb-4 shadow-sm hover:border-blue-300 transition-colors">
-                        <span className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full mr-2 text-[10px]">⚖️</span>
-                        Interactive Constitution Discovery
+                    <div className="group relative inline-flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full bg-white/50 backdrop-blur-md border border-slate-200/60 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)] hover:border-blue-200/80 hover:bg-white/80 transition-all duration-300 cursor-default mb-0 select-none">
+                        <div className="relative flex items-center justify-center w-6 h-6 rounded-full bg-linear-to-b from-blue-50 to-white border border-blue-100 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                            <span className="text-[10px]">⚖️</span>
+                        </div>
+                        <span className="text-sm font-medium text-slate-600/90 tracking-wide group-hover:text-slate-800 transition-colors">
+                            Interactive Constitution Discovery
+                        </span>
                     </div>
 
                     <h1 className="text-6xl md:text-8xl font-bold tracking-tight text-slate-900 leading-tight py-2 mb-2">
@@ -114,13 +130,29 @@ export default function WelcomeHero() {
                                 <Step1Icon size={120} strokeWidth={0.5} />
                             </div>
                             <div className="relative z-10 flex flex-col h-full justify-between">
-                                <div className="mb-6">
+                                <div>
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-50 text-blue-600 border border-blue-100">STEP 01</div>
                                         <div className="h-px w-8 bg-blue-200"></div>
                                     </div>
                                     <h3 className="text-2xl font-bold text-slate-900 mb-2">{steps[0].title}</h3>
                                     <p className="text-slate-500 font-light leading-relaxed max-w-md">{steps[0].desc}</p>
+
+                                    {/* Color Legend */}
+                                    <div className="flex flex-wrap gap-4 select-none mt-4">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-100"></span>
+                                            <span className="text-xs text-slate-600 font-medium">เพิ่มใหม่</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-rose-400 ring-2 ring-rose-100"></span>
+                                            <span className="text-xs text-slate-600 font-medium">ถูกตัดออก</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-amber-100"></span>
+                                            <span className="text-xs text-slate-600 font-medium">มีการแก้ไข</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                             </div>
@@ -180,14 +212,14 @@ export default function WelcomeHero() {
                 </div>
 
                 {/* CTA and Compact Footer */}
-                <div className="flex flex-col items-center gap-6 animate-fade-in-up delay-200 w-full mt-4">
+                <div className="flex flex-col items-center gap-6 animate-fade-in-up delay-200 w-full mt-4 mb-20">
                     <button
                         onClick={() => document.getElementById('workspace')?.scrollIntoView({ behavior: 'smooth' })}
-                        className="group relative inline-flex items-center justify-center px-8 py-3.5 font-semibold text-white transition-all duration-200 bg-slate-900 font-lg rounded-full hover:bg-slate-800 hover:shadow-lg hover:shadow-slate-500/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 focus:ring-offset-white"
+                        className="group relative inline-flex items-center justify-center px-8 py-3.5 font-semibold text-white transition-transform duration-200 bg-slate-900 font-lg rounded-full hover:bg-slate-800 hover:shadow-lg hover:shadow-slate-500/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 focus:ring-offset-white"
                     >
                         <span className="mr-2">Start Analysis</span>
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        <div className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 transition-all"></div>
+                        <div className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 transition-shadow"></div>
                     </button>
 
                     <div className="flex flex-col md:flex-row items-center justify-center gap-y-3 gap-x-6 text-[10px] md:text-xs text-slate-500 relative z-20">

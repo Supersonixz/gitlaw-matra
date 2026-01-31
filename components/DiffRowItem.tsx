@@ -17,7 +17,7 @@ const getCardStyle = (status: string, isCompact: boolean, hasData: boolean, side
 
 function DiffRowItem({ row, onJumpToPage, forceMobileMode }: { row: DisplayRow, onJumpToPage?: (p: number, s: 'left' | 'right') => void, forceMobileMode: boolean }) {
     const { status, left, right, isCompact } = row;
-    const cardBase = "rounded-lg border shadow-sm transition-all hover:shadow-md h-full flex flex-col group/card p-3 mb-1 relative";
+    const cardBase = "rounded-lg border shadow-sm transition-shadow duration-200 hover:shadow-md h-full flex flex-col group/card p-3 mb-1 relative";
     const emptyState = forceMobileMode ? "hidden" : "hidden md:block h-full border-none bg-transparent invisible";
 
     const leftStyle = getCardStyle(status, !!isCompact, !!left, 'left');
@@ -31,6 +31,63 @@ function DiffRowItem({ row, onJumpToPage, forceMobileMode }: { row: DisplayRow, 
         ? "text-[9px] font-bold text-slate-400 uppercase mr-2 bg-slate-100 px-1 rounded"
         : "md:hidden text-[9px] font-bold text-slate-400 uppercase mr-2 bg-slate-100 px-1 rounded";
 
+    // --- MATCH STATUS: Special Mobile View ---
+    if (status === 'MATCH') {
+        const DesktopView = (
+            <div className={`hidden md:grid grid-cols-2 md:gap-4 items-start group w-full ${forceMobileMode ? '!hidden' : ''}`}>
+                <div className="relative w-full">
+                    <div className={`${cardBase} ${leftStyle}`}>
+                        <div className="flex-1 text-xs text-slate-700 leading-relaxed text-justify block">
+                            {left?.pageNumber && <PdfButton pageNumber={left.pageNumber} side="left" onJumpToPage={onJumpToPage} />}
+                            <span className="font-mono font-bold text-slate-700 select-none text-xs">#{left?.id}</span>
+                            <span className="md:hidden text-[9px] font-bold text-slate-400 uppercase mr-2 bg-slate-100 px-1 rounded">REF</span>
+                            {left?.content && <ExpandableText content={left.content} />}
+                        </div>
+                    </div>
+                </div>
+                <div className="relative w-full">
+                    <div className={`${cardBase} ${rightStyle}`}>
+                        <div className="flex-1 text-xs text-slate-700 leading-relaxed text-justify block">
+                            {right?.pageNumber && <PdfButton pageNumber={right.pageNumber} side="right" onJumpToPage={onJumpToPage} />}
+                            <span className="font-mono font-bold text-slate-700 select-none text-xs">#{right?.id}</span>
+                            <span className="md:hidden text-[9px] font-bold text-slate-400 uppercase mr-2 bg-slate-100 px-1 rounded">NEW</span>
+                            {right?.content && <ExpandableText content={right.content} />}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const MobileView = (
+            <div className={`md:hidden w-full ${forceMobileMode ? '!block' : ''}`}>
+                <div className={`${cardBase} bg-white border-slate-200 border-dashed opacity-80`}>
+                    <div className="flex-1 text-xs text-slate-600 leading-relaxed text-justify block">
+                        <div className="flex items-center gap-2 mb-2">
+
+                            <span className="font-mono font-bold text-slate-500 select-none text-xs">#{left?.id}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase bg-slate-100 px-1.5 py-0.5 rounded">
+                                MATCH
+                            </span>
+                            <div className="flex  flex-1 gap-1 justify-between">
+                                {left?.pageNumber && <PdfButton pageNumber={left.pageNumber} side="left" onJumpToPage={onJumpToPage} />}
+                                {right?.pageNumber && right.pageNumber !== left?.pageNumber && <PdfButton pageNumber={right.pageNumber} side="right" onJumpToPage={onJumpToPage} />}
+                            </div>
+                        </div>
+                        {left?.content && <ExpandableText content={left.content} />}
+                    </div>
+                </div>
+            </div>
+        );
+
+        return (
+            <div className="w-full">
+                {DesktopView}
+                {MobileView}
+            </div>
+        );
+    }
+
+    // --- NON-MATCH STATUS (or fallback) ---
     return (
         <div className={gridClass}>
             <div className="relative w-full">
@@ -78,6 +135,8 @@ const ExpandableText = ({ content }: { content: string }) => {
         ? content.slice(0, MAX_LENGTH)
         : content;
 
+    const formattedContent = React.useMemo(() => formatText(displayedContent), [displayedContent]);
+
     return (
         <div
             className={`relative ${shouldTruncate ? 'cursor-pointer' : ''}`}
@@ -88,7 +147,7 @@ const ExpandableText = ({ content }: { content: string }) => {
                 }
             }}
         >
-            {formatText(displayedContent)}
+            {formattedContent}
             {!isExpanded && shouldTruncate && <span className="text-slate-400 select-none">... </span>}
 
             {shouldTruncate && (
