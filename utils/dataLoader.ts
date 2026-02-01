@@ -209,32 +209,46 @@ export const fetchConstitutionData = async (id: string): Promise<ConstitutionDat
 
     // Calculate total character count
     let totalLength = 0;
-    const catLengths: Record<string, number> = {};
+    // Track lengths per page per category
+    const pageCategoryLengths: Record<number, Record<string, number>> = {};
 
     content?.sections.forEach(sec => {
         if (sec.type === 'section' || !sec.type) {
             const len = sec.content.length;
             totalLength += len;
 
-            const catId = sec.category_id || 'uncategorized';
-            catLengths[catId] = (catLengths[catId] || 0) + len;
+            // pageNumber is 1-based
+            const pageIdx = (sec.pageNumber || 1) - 1;
+            if (pageIdx >= 0 && pageIdx < totalPages) {
+                if (!pageCategoryLengths[pageIdx]) {
+                    pageCategoryLengths[pageIdx] = {};
+                }
+                const catId = sec.category_id || 'uncategorized';
+                pageCategoryLengths[pageIdx][catId] = (pageCategoryLengths[pageIdx][catId] || 0) + len;
+            }
         }
     });
 
     //simple ratio
     const calculatedPages: PageRatio[][] = Array.from({ length: totalPages }, () => []);
+    const averageLengthPerPage = totalLength > 0 ? (totalLength / totalPages) : 1;
 
-    // Distribute ratios
+    // Distribute ratios per page
     if (totalLength > 0) {
-        Object.keys(catLengths).forEach(catId => {
-            const ratio = (catLengths[catId] / totalLength) * totalPages;
+        Object.keys(pageCategoryLengths).forEach(pageIdxStr => {
+            const pageIdx = parseInt(pageIdxStr);
+            const catMap = pageCategoryLengths[pageIdx];
 
-            if (calculatedPages[0]) {
-                calculatedPages[0].push({
-                    categoryId: catId,
-                    pageRatio: ratio
-                });
-            }
+            Object.entries(catMap).forEach(([catId, len]) => {
+                // Ratio relative to average page density
+                const ratio = len / averageLengthPerPage;
+                if (calculatedPages[pageIdx]) {
+                    calculatedPages[pageIdx].push({
+                        categoryId: catId,
+                        pageRatio: ratio
+                    });
+                }
+            });
         });
     }
 

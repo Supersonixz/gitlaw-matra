@@ -24,18 +24,29 @@ interface Props {
 // 1. Calculate "Weight" of each category (Total Page Ratio)
 const calculateWeight = (meta: ConstitutionMeta) => {
     const weights: Record<string, number> = {};
-    meta.pages.flat().forEach(p => {
-        weights[p.categoryId] = (weights[p.categoryId] || 0) + p.pageRatio;
-    });
+
+    // Optimized: Avoid .flat() to reduce memory allocation
+    for (let i = 0; i < meta.pages.length; i++) {
+        const pageItems = meta.pages[i];
+        if (!pageItems) continue;
+
+        for (let j = 0; j < pageItems.length; j++) {
+            const p = pageItems[j];
+            weights[p.categoryId] = (weights[p.categoryId] || 0) + p.pageRatio;
+        }
+    }
+
     // Convert to % relative to total pages
-    Object.keys(weights).forEach(k => {
-        weights[k] = (weights[k] / meta.pageCount) * 100;
-    });
+    if (meta.pageCount > 0) {
+        for (const k in weights) {
+            weights[k] = (weights[k] / meta.pageCount) * 100;
+        }
+    }
     return weights;
 };
 
 function ConceptDiff({
-    leftMeta, rightMeta, categories, isCollapsed, onToggleCollapse,
+    leftMeta, rightMeta, isCollapsed, onToggleCollapse,
     leftId, setLeftId, rightId, setRightId, allConstitutions, onCategoryClick
 }: Props) {
 
@@ -70,8 +81,8 @@ function ConceptDiff({
                             onClick={() => hasContent && onCategoryClick?.(cat.id)}
                             disabled={!hasContent}
                             className={`flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-full border text-[10px] font-medium transition-colors ${hasContent
-                                    ? 'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100 hover:border-blue-200 hover:text-blue-600 cursor-pointer'
-                                    : 'bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed grayscale opacity-60'
+                                ? 'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100 hover:border-blue-200 hover:text-blue-600 cursor-pointer'
+                                : 'bg-slate-50/50 border-slate-100 text-slate-300 cursor-not-allowed grayscale opacity-60'
                                 }`}
                             title={cat.name}
                         >
@@ -115,18 +126,18 @@ function ConceptDiff({
                             </div>
 
                             <div className="h-2 md:h-4 w-full flex rounded-xl overflow-hidden bg-slate-100 relative shadow-inner ring-1 ring-slate-200/50">
-                                {categories.map(cat => {
+                                {CATEGORY_ORDER.map(cat => {
                                     const width = leftWeights[cat.id] || 0;
                                     if (width === 0) return null;
                                     return (
                                         <div
                                             key={cat.id}
-                                            style={{ width: `${width}%`, backgroundColor: cat.color }}
+                                            style={{ width: `${width}%`, backgroundColor: CATEGORY_COLORS[cat.id] || "#ccc" }}
                                             className="h-full hover:brightness-110 hover:scale-y-110 transition-all duration-200 relative group"
                                         >
                                             {/* Tooltip */}
                                             <div className="opacity-0 group-hover:opacity-100 absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap z-30 pointer-events-none shadow-xl transform translate-y-1 group-hover:translate-y-0 transition-transform">
-                                                <div className="font-bold mb-0.5">{cat.title}</div>
+                                                <div className="font-bold mb-0.5">{cat.name}</div>
                                                 <div className="text-slate-300 font-mono text-[9px]">{width.toFixed(1)}%</div>
                                                 <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
                                             </div>
@@ -177,18 +188,18 @@ function ConceptDiff({
                             </div>
 
                             <div className="h-2 md:h-4 w-full flex rounded-xl overflow-hidden bg-slate-100 relative shadow-inner ring-1 ring-slate-200/50 flex-row">
-                                {categories.map(cat => {
+                                {CATEGORY_ORDER.map(cat => {
                                     const width = rightWeights[cat.id] || 0;
                                     if (width === 0) return null;
                                     return (
                                         <div
                                             key={cat.id}
-                                            style={{ width: `${width}%`, backgroundColor: cat.color }}
+                                            style={{ width: `${width}%`, backgroundColor: CATEGORY_COLORS[cat.id] || "#ccc" }}
                                             className="h-full hover:brightness-110 hover:scale-y-110 transition-all duration-200 relative group"
                                         >
                                             {/* Tooltip */}
                                             <div className="opacity-0 group-hover:opacity-100 absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap z-30 pointer-events-none shadow-xl transform translate-y-1 group-hover:translate-y-0 transition-transform">
-                                                <div className="font-bold mb-0.5">{cat.title}</div>
+                                                <div className="font-bold mb-0.5">{cat.name}</div>
                                                 <div className="text-slate-300 font-mono text-[9px]">{width.toFixed(1)}%</div>
                                                 <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
                                             </div>
