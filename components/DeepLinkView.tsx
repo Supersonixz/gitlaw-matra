@@ -5,6 +5,7 @@ import { ConstitutionData, getAllConstitutions, fetchConstitutionData } from '@/
 import ConceptDiff from '@/components/ConceptDiff';
 import WelcomeHero from '@/components/WelcomeHero';
 import dynamic from 'next/dynamic';
+import { toast } from 'sonner';
 
 const LiquidPDFLayout = dynamic(() => import('@/components/LiquidPDFLayout'), { ssr: false });
 const MemoizedLayout = React.memo(LiquidPDFLayout);
@@ -39,8 +40,17 @@ export default function DeepLinkView({
 
     const allConstitutions = useMemo(() => getAllConstitutions(), []);
 
+    const notifyCon2495Rule = () => {
+        toast.message(
+                 'ปี 2495 จะถูกจับคู่กับปี 2475 อัตโนมัติ',
+            {
+                description: 
+                     'ระบบบังคับให้เปรียบเทียบเป็น 2475 (ซ้าย) vs 2495 (ขวา)'
+            }
+        );
+    };
+
     const normalizeComparison = (l: string, r: string) => {
-        // Special rule: if either side is con2495, always compare con2475 (left) vs con2495 (right)
         if (l === 'con2495' || r === 'con2495') {
             return { left: 'con2475', right: 'con2495' };
         }
@@ -88,11 +98,23 @@ export default function DeepLinkView({
 
     const handleLeftChange = (newId: string) => {
         if (newId === leftId) return;
+
+        // If user explicitly selects con2495, notify that the pair will be normalized.
+        if (newId === 'con2495' && leftId !== 'con2495' && rightId !== 'con2495') {
+            notifyCon2495Rule();
+        }
+
         updateComparison(newId, rightId);
     };
 
     const handleRightChange = (newId: string) => {
         if (newId === rightId) return;
+
+        // If user explicitly selects con2495, notify that the pair will be normalized.
+        if (newId === 'con2495' && leftId !== 'con2495' && rightId !== 'con2495') {
+            notifyCon2495Rule();
+        }
+
         updateComparison(leftId, newId);
     };
 

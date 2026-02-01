@@ -2,6 +2,7 @@
 import React from 'react';
 import { DisplayRow } from '@/types/diffView';
 import DiffRowItem from './DiffRowItem';
+import PdfButton from './PdfButton';
 
 // --- Reusable Component for Semantic Blocks ---
 const SemanticBlock = ({
@@ -11,7 +12,10 @@ const SemanticBlock = ({
     leftText,
     rightText,
     fallbackText,
-    forceMobileMode
+    forceMobileMode,
+    leftPageNumber,
+    rightPageNumber,
+    onJumpToPage
 }: {
     title: string;
     iconColor: string;
@@ -20,6 +24,9 @@ const SemanticBlock = ({
     rightText?: string;
     fallbackText?: string;
     forceMobileMode: boolean;
+    leftPageNumber?: number;
+    rightPageNumber?: number;
+    onJumpToPage?: (p: number, s: 'left' | 'right') => void;
 }) => {
     if (!leftText && !rightText && !fallbackText) return null;
 
@@ -53,8 +60,11 @@ const SemanticBlock = ({
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     Reference (เดิม)
                                 </span>
+                                {typeof leftPageNumber === 'number' && leftPageNumber > 0 && (
+                                    <PdfButton pageNumber={leftPageNumber} side="left" onJumpToPage={onJumpToPage} />
+                                )}
                             </div>
-                            <div className="rounded-xl bg-slate-50 p-3.5 text-sm leading-relaxed text-slate-600 border border-slate-100/50 min-h-[80px]">
+                            <div className="rounded-xl bg-slate-50 p-3.5 text-sm leading-relaxed text-slate-600 border border-slate-100/50 min-h-20">
                                 {leftText || <span className="text-slate-300 italic">ไม่มีข้อมูล</span>}
                             </div>
                         </div>
@@ -74,8 +84,11 @@ const SemanticBlock = ({
                                 <span className={`text-[10px] font-bold uppercase tracking-wider ${title === 'AI Summary' ? 'text-blue-600/70' : 'text-amber-600/70'}`}>
                                     Comparison (ใหม่)
                                 </span>
+                                {typeof rightPageNumber === 'number' && rightPageNumber > 0 && (
+                                    <PdfButton pageNumber={rightPageNumber} side="right" onJumpToPage={onJumpToPage} />
+                                )}
                             </div>
-                            <div className={`rounded-xl p-3.5 text-sm leading-relaxed font-medium border min-h-[80px]
+                            <div className={`rounded-xl p-3.5 text-sm leading-relaxed font-medium border min-h-20
                                 ${title === 'AI Summary'
                                     ? 'bg-blue-50/50 text-slate-700 border-blue-100/50'
                                     : 'bg-amber-50/50 text-slate-800 border-amber-100/50'
@@ -103,6 +116,22 @@ const DiffSection = React.memo(({ group, onJumpToPage, forceMobileMode, isExpand
     const firstRow = group.rows[0];
     const rowCount = group.rows.length;
 
+    const leftPageNumber = React.useMemo(() => {
+        for (const row of group.rows) {
+            const pn = row.left?.pageNumber;
+            if (typeof pn === 'number' && pn > 0) return pn;
+        }
+        return undefined;
+    }, [group.rows]);
+
+    const rightPageNumber = React.useMemo(() => {
+        for (const row of group.rows) {
+            const pn = row.right?.pageNumber;
+            if (typeof pn === 'number' && pn > 0) return pn;
+        }
+        return undefined;
+    }, [group.rows]);
+
     // Check if we have any semantic content to show
     const hasAiContent = firstRow.leftAiSummary || firstRow.rightAiSummary || firstRow.aiSummary;
     const hasKeyChange = firstRow.leftKeyChange || firstRow.rightKeyChange || firstRow.keyChange;
@@ -118,7 +147,7 @@ const DiffSection = React.memo(({ group, onJumpToPage, forceMobileMode, isExpand
             else if (row.status === 'MODIFIED') colorClass = "bg-amber-400";
 
             return (
-                <div key={i} className={`w-2.5 h-2.5 rounded-[2px] ${colorClass} opacity-90`} />
+                <div key={i} className={`w-2.5 h-2.5 rounded-xs ${colorClass} opacity-90`} />
             );
         });
     }, [group.rows]);
@@ -137,10 +166,13 @@ const DiffSection = React.memo(({ group, onJumpToPage, forceMobileMode, isExpand
                 onClick={handleToggle}
             >
                 <div className="flex items-center gap-4">
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+                    <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-300 to-transparent"></div>
                     <div className="flex items-center gap-3 bg-white pl-3 pr-5 py-1.5 rounded-full border border-slate-200 shadow-sm transition-all group-hover/header:shadow-md group-hover/header:border-blue-200 group-hover/header:ring-2 group-hover/header:ring-blue-50">
                         <button
                             className={`p-1.5 rounded-full bg-slate-100 text-slate-500 transition-all duration-300 ${isExpanded ? 'rotate-180 bg-blue-100 text-blue-600' : 'rotate-0'}`}
+                            type="button"
+                            aria-label={isExpanded ? 'Collapse section' : 'Expand section'}
+                            title={isExpanded ? 'Collapse section' : 'Expand section'}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                                 <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
@@ -157,7 +189,7 @@ const DiffSection = React.memo(({ group, onJumpToPage, forceMobileMode, isExpand
                             )}
                         </div>
                     </div>
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+                    <div className="h-px flex-1 bg-linear-to-r from-transparent via-slate-300 to-transparent"></div>
                 </div>
             </div>
 
@@ -201,6 +233,9 @@ const DiffSection = React.memo(({ group, onJumpToPage, forceMobileMode, isExpand
                                     rightText={firstRow.rightAiSummary}
                                     fallbackText={firstRow.aiSummary}
                                     forceMobileMode={forceMobileMode}
+                                    leftPageNumber={leftPageNumber}
+                                    rightPageNumber={rightPageNumber}
+                                    onJumpToPage={onJumpToPage}
                                 />
 
                                 {/* Key Change Block */}
@@ -216,6 +251,9 @@ const DiffSection = React.memo(({ group, onJumpToPage, forceMobileMode, isExpand
                                     rightText={firstRow.rightKeyChange}
                                     fallbackText={firstRow.keyChange}
                                     forceMobileMode={forceMobileMode}
+                                    leftPageNumber={leftPageNumber}
+                                    rightPageNumber={rightPageNumber}
+                                    onJumpToPage={onJumpToPage}
                                 />
 
                             </div>

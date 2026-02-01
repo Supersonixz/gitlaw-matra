@@ -51,6 +51,10 @@ function ConceptDiff({
     leftId, setLeftId, rightId, setRightId, allConstitutions, onCategoryClick, onSwap
 }: Props) {
 
+    const isCon2495Involved = leftId === 'con2495' || rightId === 'con2495';
+    const lockLeftTo2475 = rightId === 'con2495';
+    const lockRightTo2475 = leftId === 'con2495';
+
     const leftWeights = useMemo(() => calculateWeight(leftMeta), [leftMeta]);
     const rightWeights = useMemo(() => calculateWeight(rightMeta), [rightMeta]);
 
@@ -116,7 +120,7 @@ function ConceptDiff({
                                             <option
                                                 key={c.id}
                                                 value={c.id}
-                                                disabled={c.id === rightId}
+                                                disabled={lockLeftTo2475 ? c.id !== 'con2475' : c.id === rightId}
                                                 className={c.id === rightId ? "text-gray-300" : ""}
                                             >
                                                 {c.year} - {c.name} {c.id === rightId ? "(เลือกอยู่ฝั่งขวา)" : ""}
@@ -162,6 +166,7 @@ function ConceptDiff({
                                 <button
                                     type="button"
                                     onClick={() => {
+                                        if (isCon2495Involved) return;
                                         if (leftId === rightId) return;
                                         if (onSwap) {
                                             onSwap();
@@ -172,9 +177,10 @@ function ConceptDiff({
                                         setLeftId(nextLeft);
                                         setRightId(nextRight);
                                     }}
-                                    className="bg-white rounded-full p-2 border border-slate-100 shadow-sm text-slate-500 hover:text-blue-600 hover:shadow-md transition-all"
+                                    className="bg-white rounded-full p-2 border border-slate-100 shadow-sm cursor-pointer text-slate-500 hover:text-blue-600 hover:shadow-md transition-all disabled:bg-red-300 disabled:text-red-500 disabled:cursor-not-allowed"
                                     aria-label="สลับรัฐธรรมนูญฝั่งซ้ายและขวา"
                                     title="สลับฝั่งซ้าย/ขวา"
+                                    disabled={isCon2495Involved}
                                 >
                                     <ArrowLeftRight size={16} />
                                 </button>
@@ -202,7 +208,7 @@ function ConceptDiff({
                                             <option
                                                 key={c.id}
                                                 value={c.id}
-                                                disabled={c.id === leftId}
+                                                disabled={lockRightTo2475 ? c.id !== 'con2475' : c.id === leftId}
                                                 className={c.id === leftId ? "text-gray-300" : ""}
                                             >
                                                 {c.year} - {c.name} {c.id === leftId ? "(เลือกอยู่ฝั่งซ้าย)" : ""}

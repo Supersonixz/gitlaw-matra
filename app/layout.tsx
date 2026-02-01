@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Outfit, Sarabun } from "next/font/google";
 import "./globals.css";
+import { getAlternateOpenGraphLocale, getOpenGraphLocale, pickLocaleFromAcceptLanguage } from "@/utils/i18n";
+import ToasterProvider from "@/components/ToasterProvider";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -15,34 +17,78 @@ const sarabun = Sarabun({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Thai Matra Diff - Visualizing Constitutional Evolution",
-  description: "Explore and compare the evolution of Thai Constitutions side-by-side. Analyze changes in specific Matras (Articles) across different eras to understand the legal history of Thailand.",
-  keywords: ["Thai Constitution", "Thailand Law", "Ratthathammanun", "Matra Diff", "Legal Comparison", "Thai Politics"],
-  authors: [{ name: "GitLaw Team" }],
-  openGraph: {
-    title: "Thai Matra Diff - Visualizing Constitutional Evolution",
-    description: "Compare Thai Constitutions side-by-side. Visualize how the law has changed over time.",
-    url: "https://www.matradiff.org", // Assuming Vercel deployment or similar
-    siteName: "Thai Matra Diff",
-    locale: "th_TH",
-    type: "website",
-    images: [
-      {
-        url: "/opengraph-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Thai Matra Diff Preview",
-      },
-    ],
+const baseMetadataByLocale: Record<"th" | "en", Pick<Metadata, "title" | "description">> = {
+  th: {
+    title: "Thai Matra Diff - สำรวจวิวัฒนาการรัฐธรรมนูญไทย",
+    description: "เปรียบเทียบรัฐธรรมนูญไทยแบบเคียงข้าง วิเคราะห์ความเปลี่ยนแปลงของมาตราตามยุคสมัย",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Thai Matra Diff",
-    description: "Visualizing the Evolution of Thai Constitutions",
-    images: ["/opengraph-image.png"],
+  en: {
+    title: "Thai Matra Diff - Visualizing Constitutional Evolution",
+    description:
+      "Explore and compare the evolution of Thai Constitutions side-by-side. Analyze changes in specific Matras (Articles) across different eras to understand the legal history of Thailand.",
   },
 };
+
+const getSiteUrl = async () => {
+  const envUrl = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+  if (envUrl) return envUrl;
+
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+
+  try {
+    const { headers } = await import("next/headers");
+    const h = await headers();
+    const proto = h.get("x-forwarded-proto") ?? "http";
+    const host = h.get("x-forwarded-host") ?? h.get("host");
+    if (host) return `${proto}://${host}`;
+  } catch {
+    // Ignore: may run at build time
+  }
+
+  return "http://localhost:3000";
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const siteUrl = await getSiteUrl();
+  let acceptLanguage: string | null = null;
+  try {
+    const { headers } = await import("next/headers");
+    const h = await headers();
+    acceptLanguage = h.get("accept-language");
+  } catch {
+    // Ignore: may run at build time
+  }
+  const locale = pickLocaleFromAcceptLanguage(acceptLanguage);
+  const baseMetadata = baseMetadataByLocale[locale];
+
+  return {
+    ...baseMetadata,
+    metadataBase: new URL(siteUrl),
+    openGraph: {
+      title: baseMetadata.title as string,
+      description: baseMetadata.description as string,
+      url: siteUrl,
+      siteName: "Thai Matra Diff",
+      locale: getOpenGraphLocale(locale),
+      alternateLocale: getAlternateOpenGraphLocale(locale),
+      type: "website",
+      images: [
+        {
+          url: new URL("/icon.png", siteUrl),
+          width: 512,
+          height: 512,
+          alt: "Thai Matra Diff",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary",
+      title: "Thai Matra Diff",
+      description: "Visualizing the Evolution of Thai Constitutions",
+      images: [new URL("/icon.png", siteUrl)],
+    },
+  };
+}
 
 export default function RootLayout({
   children,
@@ -54,6 +100,7 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${sarabun.variable} font-sans antialiased bg-slate-100 text-slate-900 selection:bg-blue-100 selection:text-blue-900`}
       >
+        <ToasterProvider />
         {children}
       </body>
     </html>
