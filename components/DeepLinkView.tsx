@@ -39,26 +39,37 @@ export default function DeepLinkView({
 
     const allConstitutions = useMemo(() => getAllConstitutions(), []);
 
-    const updateComparison = async (newLeftId: string, newRightId: string) => {
-        setLeftId(newLeftId);
-        setRightId(newRightId);
+    const normalizeComparison = (l: string, r: string) => {
+        // Special rule: if either side is con2495, always compare con2475 (left) vs con2495 (right)
+        if (l === 'con2495' || r === 'con2495') {
+            return { left: 'con2475', right: 'con2495' };
+        }
+        return { left: l, right: r };
+    };
 
-        const newUrl = `/${newLeftId}-vs-${newRightId}`;
+    const updateComparison = async (newLeftId: string, newRightId: string) => {
+        const normalized = normalizeComparison(newLeftId, newRightId);
+        if (normalized.left === normalized.right) return;
+
+        setLeftId(normalized.left);
+        setRightId(normalized.right);
+
+        const newUrl = `/${normalized.left}-vs-${normalized.right}`;
         window.history.pushState(null, '', newUrl);
 
         // (Cache check)
-        if (newLeftId === leftData.meta.id && newRightId === rightData.meta.id) {
+        if (normalized.left === leftData.meta.id && normalized.right === rightData.meta.id) {
             return;
         }
 
         setIsLoading(true);
-        const requestId = `${newLeftId}-${newRightId}`;
+        const requestId = `${normalized.left}-${normalized.right}`;
         activeRequest.current = requestId;
 
         try {
             // เช็คว่าต้องโหลดฝั่งไหนบ้าง
-            const leftPromise = newLeftId !== leftData.meta.id ? fetchConstitutionData(newLeftId) : Promise.resolve(leftData);
-            const rightPromise = newRightId !== rightData.meta.id ? fetchConstitutionData(newRightId) : Promise.resolve(rightData);
+            const leftPromise = normalized.left !== leftData.meta.id ? fetchConstitutionData(normalized.left) : Promise.resolve(leftData);
+            const rightPromise = normalized.right !== rightData.meta.id ? fetchConstitutionData(normalized.right) : Promise.resolve(rightData);
 
             const [newLeftData, newRightData] = await Promise.all([leftPromise, rightPromise]);
 
@@ -77,20 +88,16 @@ export default function DeepLinkView({
 
     const handleLeftChange = (newId: string) => {
         if (newId === leftId) return;
-        if (newId === 'con2495') {
-            updateComparison('con2475', 'con2495');
-        } else {
-            updateComparison(newId, rightId);
-        }
+        updateComparison(newId, rightId);
     };
 
     const handleRightChange = (newId: string) => {
         if (newId === rightId) return;
-        if (newId === 'con2495') {
-            updateComparison('con2475', 'con2495');
-        } else {
-            updateComparison(leftId, newId);
-        }
+        updateComparison(leftId, newId);
+    };
+
+    const handleSwap = () => {
+        updateComparison(rightId, leftId);
     };
 
     useEffect(() => {
@@ -99,10 +106,20 @@ export default function DeepLinkView({
             const parts = path.split('-vs-');
             if (parts.length === 2) {
                 const [l, r] = parts;
-                setLeftId(l);
-                setRightId(r);
+                const normalized = normalizeComparison(l, r);
+                if (normalized.left === normalized.right) return;
+
+                if (normalized.left !== l || normalized.right !== r) {
+                    window.history.replaceState(null, '', `/${normalized.left}-vs-${normalized.right}`);
+                }
+
+                setLeftId(normalized.left);
+                setRightId(normalized.right);
                 setIsLoading(true);
-                const [dl, dr] = await Promise.all([fetchConstitutionData(l), fetchConstitutionData(r)]);
+                const [dl, dr] = await Promise.all([
+                    fetchConstitutionData(normalized.left),
+                    fetchConstitutionData(normalized.right)
+                ]);
                 setLeftData(dl);
                 setRightData(dr);
                 setIsLoading(false);
@@ -143,6 +160,7 @@ export default function DeepLinkView({
                             setRightId={handleRightChange}
                             allConstitutions={allConstitutions}
                             onCategoryClick={setTargetCategory}
+                            onSwap={handleSwap}
                         />
                     </div>
 
