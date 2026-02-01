@@ -191,7 +191,7 @@ function ConceptDiff({
                             </div>
                         </div>
 
-                        {/* --- RIGHT SIDE --- ss*/}
+                        {/* --- RIGHT SIDE --- */}
                         <div className="flex-1 flex flex-col gap-2 group/right">
                             <div className="flex justify-between items-end px-1 md:flex-row gap-3">
                                 {/* Right Selector */}
